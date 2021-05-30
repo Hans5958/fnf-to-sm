@@ -22,8 +22,13 @@ import json
 import math
 import sys
 import os
+import subprocess
+# import ffmpeg
+import PySimpleGUI as sg
+import time
+import threading
 
-VERSION = "v0.1.2"
+VERSION = "v0.2.0-dev"
 
 SM_EXT = ".sm"
 SSC_EXT = ".ssc"
@@ -35,7 +40,8 @@ BEAT_TICKS = 48
 # fnf step = 1/16 note
 STEP_TICKS = 12
 
-NUM_COLUMNS = 8
+NUM_COLUMNS_DOUBLE = 8
+NUM_COLUMNS_SINGLE = 4
 
 # borrowed from my Sharktooth code
 class TempoMarker:
@@ -89,41 +95,39 @@ def tickToBPM(tick):
 			return tempomarkers[i].getBPM()
 	return 0.0
 
-def fnf_to_sm(infile):
-	chart_jsons = []
+def fnf_to_sm(
+	chart_jsons, 
+	window, 
+	song_name, 
+	song_artist, 
+	song_charter, 
+	song_credit, 
+	song_subtitle, 
+	output_folder, 
+	song_folder_name,
+	song_banner_file_name,
+	song_bg_file_name):
 	
-	# given a normal difficulty .json,
-	# try to detect all 3 FNF difficulties if possible
-	infile_name, infile_ext = os.path.splitext(infile)
-	infile_easy = infile_name + "-easy" + FNF_EXT
-	infile_hard = infile_name + "-hard" + FNF_EXT
-	
-	with open(infile, "r") as chartfile:
-		chart_json = json.loads(chartfile.read().strip('\0'))
-		chart_json["diff"] = "Medium"
-		chart_jsons.append(chart_json)
-		
-	if os.path.isfile(infile_easy):
-		with open(infile_easy, "r") as chartfile:
-			chart_json = json.loads(chartfile.read().strip('\0'))
-			chart_json["diff"] = "Easy"
-			chart_jsons.append(chart_json)
-			
-	if os.path.isfile(infile_hard):
-		with open(infile_hard, "r") as chartfile:
-			chart_json = json.loads(chartfile.read().strip('\0'))
-			chart_json["diff"] = "Hard"
-			chart_jsons.append(chart_json)
-
 	# for each fnf difficulty
 	sm_header = ''
 	sm_notes = ''
+
+	steps_to_make = 1
+	steps_made = 0
+
 	for chart_json in chart_jsons:
+
+		for mode in chart_json["modes"]:
+
+			steps_to_make += 1
+
+	for chart_json in chart_jsons:
+
 		song_notes = chart_json["song"]["notes"]
+		infile = chart_json["infile"]
 		num_sections = len(song_notes)
 		# build sm header if it doesn't already exist
 		if len(sm_header) == 0:
-			song_name = chart_json["song"]["song"]
 			song_bpm = chart_json["song"]["bpm"]
 			
 			print("Converting {} to {}.sm".format(infile, song_name))
@@ -160,13 +164,19 @@ def fnf_to_sm(infile):
 			bpms = bpms[:-1] + ";\n"
 
 			# write .sm header
-			sm_header = "#TITLE:{}\n".format(song_name)
+			sm_header = "#TITLE:{};\n".format(song_name)
+			sm_header += "#SUBTITLE:{};\n".format(song_subtitle)
+			sm_header += "#ARTIST:{};\n".format(song_artist)
+			sm_header += "#CREDIT:{};\n".format(song_credit)
 			sm_header += "#MUSIC:{}.ogg;\n".format(song_name)
+			sm_header += "#BANNER:{};\n".format(song_banner_file_name)
+			sm_header += "#BACKGROUND:{};\n".format(song_bg_file_name)
 			sm_header += bpms
 
 		notes = {}
+		notes_challenge = {}
 		last_note = 0
-		diff_value = 1
+		last_note_challenge = 0
 
 		# convert note timestamps to ticks
 		for i in range(num_sections):
@@ -175,71 +185,146 @@ def fnf_to_sm(infile):
 			for section_note in section_notes:
 				tick = timeToTick(section_note[0])
 				note = section_note[1]
+				note_challenge = int(section_note[1])
 				if section["mustHitSection"]:
 					note = (note + 4) % 8
+				note = int(note)
 				length = section_note[2]
 				
 				# Initialize a note for this tick position
 				if tick not in notes:
-					notes[tick] = [0]*NUM_COLUMNS
+					notes[tick] = [0]*NUM_COLUMNS_DOUBLE
+					notes_challenge[tick] = [0]*NUM_COLUMNS_DOUBLE
 
 				if length == 0:
 					notes[tick][note] = 1
+					notes_challenge[tick][note_challenge] = 1
 				else:
 					notes[tick][note] = 2
+					notes_challenge[tick][note_challenge] = 2
 					# 3 is "long note toggle off", so we need to set it after a 2
 					long_end = timeToTick(section_note[0] + section_note[2])
 					if long_end not in notes:
-						notes[long_end] = [0]*NUM_COLUMNS
+						notes[long_end] = [0]*NUM_COLUMNS_DOUBLE
+					if long_end not in notes_challenge:
+						notes_challenge[long_end] = [0]*NUM_COLUMNS_DOUBLE
 					notes[long_end][note] = 3
+					notes_challenge[long_end][note_challenge] = 3
 					if last_note < long_end:
 						last_note = long_end
+					if last_note_challenge < long_end:
+						last_note_challenge = long_end
 
 				if last_note <= tick:
 					last_note = tick + 1
+				if last_note_challenge <= tick:
+					last_note_challenge = tick + 1
+
 
 		if len(notes) > 0:
-			# write chart & difficulty info
-			sm_notes += "\n"
-			sm_notes += "#NOTES:\n"
-			sm_notes += "	  dance-double:\n"
-			sm_notes += "	  :\n"
-			sm_notes += "	  {}:\n".format(chart_json["diff"]) # e.g. Challenge:
-			sm_notes += "	  {}:\n".format(diff_value)
-			sm_notes += "	  :\n" # empty groove radar
 
-			# ensure the last measure has the correct number of lines
-			if last_note % MEASURE_TICKS != 0:
-				last_note += MEASURE_TICKS - (last_note % MEASURE_TICKS)
+			for mode_dict in chart_json["modes"]:
 
-			# add notes for each measure
-			for measureStart in range(0, last_note, MEASURE_TICKS):
-				measureEnd = measureStart + MEASURE_TICKS
-				valid_indexes = set()
-				for i in range(measureStart, measureEnd):
-					if i in notes:
-						valid_indexes.add(i - measureStart)
-				
-				noteStep = measure_gcd(valid_indexes, MEASURE_TICKS)
+				mode, diff_value = mode_dict
 
-				for i in range(measureStart, measureEnd, noteStep):
-					if i not in notes:
-						sm_notes += '0'*NUM_COLUMNS + '\n'
-					else:
-						for digit in notes[i]:
-							sm_notes += str(digit)
-						sm_notes += '\n'
-
-				if measureStart + MEASURE_TICKS == last_note:
-					sm_notes += ";\n"
+				# write chart & difficulty info
+				sm_notes += "\n"
+				sm_notes += "#NOTES:\n"
+				if mode == "single-challenge":
+					sm_notes += "	  dance-single:\n"
 				else:
-					sm_notes += ',\n'
+					sm_notes += "	  dance-{}:\n".format(mode)
+				sm_notes += "	  {}:\n".format(song_charter)
+				if mode == "single-challenge":
+					sm_notes += "	  Challenge:\n"
+				else:
+					sm_notes += "	  {}:\n".format(chart_json["diff"]) # e.g. Challenge:
+				sm_notes += "	  {}:\n".format(diff_value)
+				sm_notes += "	  :\n" # empty groove radar
+
+				# ensure the last measure has the correct number of lines
+				if last_note % MEASURE_TICKS != 0:
+					last_note += MEASURE_TICKS - (last_note % MEASURE_TICKS)
+
+				# add notes for each measure
+				for measureStart in range(0, last_note, MEASURE_TICKS):
+					measureEnd = measureStart + MEASURE_TICKS
+					valid_indexes = set()
+					for i in range(measureStart, measureEnd):
+						if i in notes:
+							valid_indexes.add(i - measureStart)
+
+					noteStep = measure_gcd(valid_indexes, MEASURE_TICKS)
+
+					if mode == "single":
+						for i in range(measureStart, measureEnd, noteStep):
+							if i not in notes:
+								sm_notes += '0'*NUM_COLUMNS_SINGLE + '\n'
+							else:
+								i2 = 0
+								for digit in notes[i]:
+									if i2 < 4:
+										i2 += 1
+										continue
+									sm_notes += str(digit)
+								sm_notes += '\n'
+					elif mode == "double" or mode == "couple":
+						for i in range(measureStart, measureEnd, noteStep):
+							if i not in notes:
+								sm_notes += '0'*NUM_COLUMNS_DOUBLE + '\n'
+							else:
+								for digit in notes[i]:
+									sm_notes += str(digit)
+								sm_notes += '\n'
+					elif mode == "single-challenge":
+						for i in range(measureStart, measureEnd, noteStep):
+							if i not in notes_challenge:
+								sm_notes += '0'*NUM_COLUMNS_SINGLE + '\n'
+							else:
+								i2 = 0
+								for digit in notes_challenge[i]:
+									if i2 < 4:
+										i2 += 1
+										sm_notes += str(digit)
+								sm_notes += '\n'
+
+					if measureStart + MEASURE_TICKS == last_note:
+						sm_notes += ";\n"
+					else:
+						sm_notes += ',\n'
+
+				steps_made += 1
+				window['progressBar1'].UpdateBar(steps_made, steps_to_make)
 
 	# output simfile
-	with open("{}.sm".format(song_name), "w") as outfile:
+	os.makedirs(os.path.join(output_folder, song_folder_name), exist_ok=True)
+	with open(f"{os.path.join(output_folder, song_folder_name, song_name)}.sm", "w") as outfile:
 		outfile.write(sm_header)
 		if len(sm_notes) > 0:
 			outfile.write(sm_notes)
+
+def merge_tracks(
+	inst_track, 
+	voices_track, 
+	output_folder, 
+	song_name, 
+	song_folder_name,
+	window,
+	callback
+):
+	os.makedirs(os.path.join(output_folder, song_folder_name), exist_ok=True)
+	print(f"ffmpeg -y -i \"{inst_track}\" -i \"{voices_track}\" -filter_complex amix=inputs=2:duration=longest \"{os.path.join(output_folder, song_folder_name, song_name)}.ogg\"")
+
+	def run_in_thread(callback):
+		ffmpeg_subprocess = subprocess.Popen(f"ffmpeg -y -i \"{inst_track}\" -i \"{voices_track}\" -filter_complex amix=inputs=2:duration=longest \"{os.path.join(output_folder, song_folder_name, song_name)}.ogg\"")
+		ffmpeg_subprocess.wait()
+		callback(window)
+		return
+
+	thread = threading.Thread(target=run_in_thread, args=(callback,))
+	thread.start()
+	return thread
+	# ffmpeg.input(inst_track).input(voices_track).filter('amix', inputs=2, duration='longest').output(f"{os.path.join(output_folder, song_name, song_name)}.ogg").run()
 
 # get simple header tag value
 def get_tag_value(line, tag):
@@ -379,26 +464,276 @@ def sm_to_fnf(infile):
 	with open("blammed.json".format(title), "w") as outfile:
 		json.dump(chart_json, outfile)
 
-def usage():
-	print("FNF SM converter")
-	print("Usage: {} [chart_file]".format(sys.argv[0]))
-	print("where [chart_file] is a .json FNF chart or a .sm simfile")
-	sys.exit(1)
+# def usage():
+# 	print("FNF SM converter")
+# 	print("Usage: {} [chart_file]".format(sys.argv[0]))
+# 	print("where [chart_file] is a .json FNF chart or a .sm simfile")
+# 	sys.exit(1)
 
 def main():
-	if len(sys.argv) < 2:
-		print("Error: not enough arguments")
-		usage()
+
+	sg.theme("SystemDefault1")
+
+	column1 = [
+		[sg.Text('Beginner', size=(7,1)), sg.Input(key='inputFileBeginner'), sg.FileBrowse(file_types=(("JSON Files", "*.json"),), key='fileBrowseBeginner')],
+		[sg.Text('Easy', size=(7,1)), sg.Input(key='inputFileEasy'), sg.FileBrowse(file_types=(("JSON Files", "*.json"),), key='fileBrowseEasy')],
+		[sg.Text('Medium', size=(7,1)), sg.Input(key='inputFileMedium', enable_events=True), sg.FileBrowse(file_types=(("JSON Files", "*.json"),), key='fileBrowseMedium', enable_events=True)],
+		[sg.Text('Hard', size=(7,1)), sg.Input(key='inputFileHard'), sg.FileBrowse(file_types=(("JSON Files", "*.json"),), key='fileBrowseHard')],
+		[sg.Text('Challenge', size=(7,1)), sg.Input(key='inputFileChallenge', disabled=True), sg.FileBrowse(file_types=(("JSON Files", "*.json"),), key='fileBrowseChallenge', disabled=True)],
+		[sg.Text('Inst', size=(7,1)), sg.Input(key='inputFileInst'), sg.FileBrowse(file_types=(("OGG Files", "*.ogg"),), key='fileBrowseInst')],
+		[sg.Text('Voices', size=(7,1)), sg.Input(key='inputFileVoices'), sg.FileBrowse(file_types=(("OGG Files", "*.ogg"),), key='fileBrowseVoices')],
+		[sg.Button('Auto-Populate'), sg.Button('Reset')],
+		[sg.Text('Output', size=(7,1)), sg.Input(os.getcwd(), key='inputFolderOutput'), sg.FolderBrowse(key='folderBrowse1')],
+		# [sg.Text(size=(40,1), key='output1')],
+		# [sg.In(), sg.FileBrowse(file_types=(("JSON Files", "*.json"),))],
+		[sg.Button('Go', key='buttonGo'), sg.Button('Exit')],
+	]
+
+	column2 = [
+		[sg.Text('Title', size=(6,1)), sg.Input(key="inputTitle")],
+		[sg.Text('Subtitle', size=(6,1)), sg.Input(key="inputSubtitle")],
+		[sg.Text('Artist', size=(6,1)), sg.Input(key="inputArtist")],
+		[sg.Text('Charter', size=(6,1)), sg.Input(key="inputCharter")],
+		[sg.Text('Credit', size=(6,1)), sg.Input("fnf-to-sm", key="inputCredit")],
+		[sg.Text('Difficulty Value')],
+		[
+			sg.Text("SBG", size=(4,1)),
+			sg.Input(2, key="inputDiffSingleBeginner", size=(2,1)), 
+			sg.Text("SEZ", size=(4,1)),
+			sg.Input(4, key="inputDiffSingleEasy", size=(2,1)), 
+			sg.Text("SMD", size=(4,1)), 
+			sg.Input(6, key="inputDiffSingleMedium", size=(2,1)), 
+			sg.Text("SHD", size=(4,1)),
+			sg.Input(8, key="inputDiffSingleHard", size=(2,1)),
+			sg.Text("SCH", size=(4,1)), 
+			sg.Input(10, key="inputDiffSingleChallenge", size=(2,1)),
+		],
+		[
+			sg.Text("DBG", size=(4,1)),
+			sg.Input(3, key="inputDiffDBeginner", size=(2,1)), 
+			sg.Text("DEZ", size=(4,1)), 
+			sg.Input(5, key="inputDiffDoubleEasy", size=(2,1)),
+			sg.Text("DMD", size=(4,1)), 
+			sg.Input(7, key="inputDiffDoubleMedium", size=(2,1)), 
+			sg.Text("DHD", size=(4,1)),
+			sg.Input(9, key="inputDiffDoubleHard", size=(2,1)),
+			sg.Text("DCH", size=(4,1)), 
+			sg.Input(11, disabled=True, key="inputDiffDoubleChallenge", size=(2,1)),
+		],
+		[sg.Text('Derivate mixed Challenge parts from...')],
+		[
+			sg.Radio('Beginner', group_id="derivateMixedFrom", enable_events=True, key="radioDerivateMixedFromBeginner"), 
+			sg.Radio('Easy', group_id="derivateMixedFrom", enable_events=True, key="radioDerivateMixedFromEasy"), 
+			sg.Radio('Medium', group_id="derivateMixedFrom", enable_events=True, key="radioDerivateMixedFromMedium"), 
+			sg.Radio('Hard', default=True, group_id="derivateMixedFrom", enable_events=True, key="radioDerivateMixedFromHard"), 
+			sg.Radio('None', group_id="derivateMixedFrom", enable_events=True, key="radioDerivateMixedFromNone")
+		],
+		[sg.Text('Banner File Name', size=(15,1)), sg.Input(key="inputBannerFileName", size=(35, 1))],
+		[sg.Text('BG File Name', size=(15,1)), sg.Input(key="inputBGFileName", size=(35, 1))],
+		[sg.Text('Folder Name', size=(15,1)), sg.Input(key="inputSongFolderName", size=(35, 1))],
+	]
+
+	layout = [
+		[sg.Text(f"fnf-to-sm (Hans5958 fork) {VERSION}")],
+		[
+			sg.Column(column1),
+			sg.Column(column2),
+		],
+		[
+			[sg.Text("Select the files and hit \"Go\".", size=(107,1), key="textProgress")],
+			[sg.ProgressBar(1, size=(78,15), orientation='h', key='progressBar1')],
+		]
+	]
+
+	window = sg.Window("fnf-to-sm GUI", layout, finalize=True)
+
+	default_values = {}
+
+	event, values = window.read(timeout=0)
+	for key in window.AllKeysDict.keys():
+		if key.startswith('input') or key.startswith('radio'):
+			default_values[key] = values[key]
+
+	while True:
+
+		event, values = window.read()
+		print(event)
+
+		if event == sg.WINDOW_CLOSED or event == 'Exit':
+			break
+
+		elif event.startswith('radioDerivateMixedFrom'):
+			if event == "radioDerivateMixedFromNone":
+				window['inputFileChallenge'].Update(disabled=False)
+				window['fileBrowseChallenge'].Update(disabled=False)
+				window['inputDiffDoubleChallenge'].Update(disabled=False)
+			else:
+				window['inputFileChallenge'].Update(disabled=True)
+				window['fileBrowseChallenge'].Update(disabled=True)		
+				window['inputDiffDoubleChallenge'].Update(disabled=True)		
+
+		elif event == 'Auto-Populate' or event == 'inputFileMedium':
+
+			infile = values['inputFileMedium']
+
+			if os.path.isfile(infile):
+
+				infile_name, infile_ext = os.path.splitext(infile)
+				infile_dirname = os.path.dirname(infile_name)
+
+				with open(infile, "r") as chartfile:
+					chart_json = json.loads(chartfile.read().strip('\0'))
+					
+					if values['inputTitle'] == "" or event == 'Auto-Populate':
+						window['inputTitle'].Update(chart_json["song"]["song"])
+
+					if values['inputSongFolderName'] == "" or event == 'Auto-Populate':
+						window['inputSongFolderName'].Update(chart_json["song"]["song"])
+
+				if values['inputFileEasy'] == "" or event == 'Auto-Populate':
+					infile_easy = infile_name + "-easy" + FNF_EXT
+					if os.path.isfile(infile_easy):
+						window['inputFileEasy'].Update(infile_easy)
+
+				if values['inputFileHard'] == "" or event == 'Auto-Populate':
+					infile_hard = infile_name + "-hard" + FNF_EXT
+					if os.path.isfile(infile_hard):
+						window['inputFileHard'].Update(infile_hard)
+
+				if values['inputFileInst'] == "" or event == 'Auto-Populate':
+					infile_inst = f"{infile_dirname.replace('data', 'songs')}/Inst.ogg"
+					if os.path.isfile(infile_inst):
+						window['inputFileInst'].Update(infile_inst)
+
+				if values['inputFileVoices'] == "" or event == 'Auto-Populate':
+					infile_voices = f"{infile_dirname.replace('data', 'songs')}/Voices.ogg"
+					if os.path.isfile(infile_voices):
+						window['inputFileVoices'].Update(infile_voices)
+
+		# if values['inputCharter'] == "":
+		# 	window['inputCharter'].Update("fnf-to-sm")
+
+		elif event == 'buttonGo':
+
+			chart_jsons = []
+
+			infile = values['inputFileBeginner']
+			if infile != "" and os.path.isfile(infile):
+				with open(infile, "r") as chartfile:
+					chart_json = json.loads(chartfile.read().strip('\0'))
+					chart_json["diff"] = "Beginner"
+					chart_json["infile"] = infile
+					chart_json["modes"] = (("single", values['inputDiffSingleBeginner']), ("double", values['inputDiffDoubleBeginner']))
+					if values['radioDerivateMixedFromBeginner']:
+						chart_json["modes"].append(("single-challenge", values['inputDiffSingleChallenge']))
+					chart_jsons.append(chart_json)
+
+			infile = values['inputFileEasy']
+			if infile != "" and os.path.isfile(infile):
+				with open(infile, "r") as chartfile:
+					chart_json = json.loads(chartfile.read().strip('\0'))
+					chart_json["diff"] = "Easy"
+					chart_json["infile"] = infile
+					chart_json["modes"] = (("single", values['inputDiffSingleEasy']), ("double", values['inputDiffDoubleEasy']))
+					if values['radioDerivateMixedFromEasy']:
+						chart_json["modes"].append(("single-challenge", values['inputDiffSingleChallenge']))
+					chart_jsons.append(chart_json)
+
+			infile = values['inputFileMedium']
+			if infile != "" and os.path.isfile(infile):
+				with open(infile, "r") as chartfile:
+					chart_json = json.loads(chartfile.read().strip('\0'))
+					chart_json["diff"] = "Medium"
+					chart_json["infile"] = infile
+					chart_json["modes"] = (("single", values['inputDiffSingleMedium']), ("double", values['inputDiffDoubleMedium']))
+					if values['radioDerivateMixedFromMedium']:
+						chart_json["modes"].append(("single-challenge", values['inputDiffSingleChallenge']))
+					chart_jsons.append(chart_json)
+
+			infile = values['inputFileHard']
+			if infile != "" and os.path.isfile(infile):
+				with open(infile, "r") as chartfile:
+					chart_json = json.loads(chartfile.read().strip('\0'))
+					chart_json["diff"] = "Hard"
+					chart_json["infile"] = infile
+					chart_json["modes"] = [("single", values['inputDiffSingleHard']), ("double", values['inputDiffDoubleHard'])]
+					if values['radioDerivateMixedFromHard']:
+						chart_json["modes"].append(("single-challenge", values['inputDiffSingleChallenge']))
+					chart_jsons.append(chart_json)
+
+			infile = values['inputFileChallenge']
+			if values['radioDerivateMixedFromNone'] and infile != "" and os.path.isfile(infile):
+				with open(infile, "r") as chartfile:
+					chart_json = json.loads(chartfile.read().strip('\0'))
+					chart_json["diff"] = "Challenge"
+					chart_json["infile"] = infile
+					chart_json["modes"] = (("single", values['inputDiffSingleChallenge']), ("double", values['inputDiffDoubleChallenge']))
+					chart_jsons.append(chart_json)
+
+			if values['inputFolderOutput'] == "":
+				output = os.getcwd()
+			else:
+				output = values['inputFolderOutput']
+
+			window['buttonGo'].Update(disabled=True)
+			window['progressBar1'].UpdateBar(0, 1)
+			window['textProgress'].Update("Converting FnF .json to .sm...")
+
+			fnf_to_sm(
+				chart_jsons, 
+				window=window, 
+				song_name=values['inputTitle'],
+				song_subtitle=values['inputSubtitle'],
+				song_artist=values['inputArtist'], 
+				song_charter=values['inputCharter'], 
+				song_credit=values['inputCredit'], 
+				song_banner_file_name=values['inputBannerFileName'],
+				song_bg_file_name=values['inputBGFileName'],
+				output_folder=output,
+				song_folder_name=values['inputSongFolderName']
+			)
+
+			if values['inputFileInst'] != "" and values['inputFileVoices'] != "":
+
+				window['textProgress'].Update("Merging tracks...")
+
+				def callback(window):
+					window['textProgress'].Update("All done!")
+					window['progressBar1'].UpdateBar(1, 1)
+					window['buttonGo'].Update(disabled=False)
+
+				merge_tracks(
+					inst_track=values['inputFileInst'],
+					voices_track=values['inputFileVoices'],
+					song_name=values['inputTitle'], 
+					output_folder=output,
+					song_folder_name=values['inputSongFolderName'],
+					callback=callback,
+					window=window
+				)
+
+
+		elif event == "Reset":
+			for key in default_values.keys(): 
+				print(key)
+				print(default_values[key])
+				window[key].Update(default_values[key])
+
+	window.close()
+
+	# if len(sys.argv) < 2:
+	# 	print("Error: not enough arguments")
+	# 	usage()
 	
-	infile = sys.argv[1]
-	infile_name, infile_ext = os.path.splitext(os.path.basename(infile))
-	if infile_ext == FNF_EXT:
-		fnf_to_sm(infile)
-	elif infile_ext == SM_EXT:
-		sm_to_fnf(infile)
-	else:
-		print("Error: unsupported file {}".format(infile))
-		usage()
+	# infile = sys.argv[1]
+	# infile_name, infile_ext = os.path.splitext(os.path.basename(infile))
+	# if infile_ext == FNF_EXT:
+	# 	fnf_to_sm(infile)
+	# elif infile_ext == SM_EXT:
+	# 	sm_to_fnf(infile)
+	# else:
+	# 	print("Error: unsupported file {}".format(infile))
+	# 	usage()
 
 if __name__ == "__main__":
 	main()
