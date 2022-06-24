@@ -241,7 +241,10 @@ def fnf_to_sm(
 					sm_notes += "	  dance-single:\n"
 				else:
 					sm_notes += "	  dance-{}:\n".format(mode)
-				sm_notes += "	  {}:\n".format(song_charter)
+				if "charter" in chart_json:
+					sm_notes += "	  {}:\n".format(chart_json["charter"])
+				else:
+					sm_notes += "	  {}:\n".format(song_charter)
 				if mode == "single-challenge":
 					sm_notes += "	  Challenge:\n"
 				else:
@@ -275,7 +278,7 @@ def fnf_to_sm(
 										continue
 									sm_notes += str(digit)
 								sm_notes += '\n'
-					elif mode == "double" or mode == "couple":
+					elif mode == "double" or mode == "couple" or mode == "routine":
 						for i in range(measureStart, measureEnd, noteStep):
 							if i not in notes:
 								sm_notes += '0'*NUM_COLUMNS_DOUBLE + '\n'
@@ -301,7 +304,7 @@ def fnf_to_sm(
 						sm_notes += ',\n'
 
 				steps_made += 1
-				window['progressBar1'].UpdateBar(steps_made, steps_to_make)
+				window['progressBar'].UpdateBar(steps_made, steps_to_make)
 
 	# output simfile
 	os.makedirs(os.path.join(output_folder, song_folder_name), exist_ok=True)
