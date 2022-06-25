@@ -13,7 +13,12 @@ col1_layout = [
 	[sg.Text("Inst", size=(7,1)), sg.Input(key="edit_inputFileInst"), sg.FileBrowse(file_types=(("OGG Files", "*.ogg"),), key="edit_fileBrowseInst")],
 	[sg.Text("Voices", size=(7,1)), sg.Input(key="edit_inputFileVoices"), sg.FileBrowse(file_types=(("OGG Files", "*.ogg"),), key="edit_fileBrowseVoices")],
 	[sg.Button("Auto-Populate", key="edit_autoPopulate"), sg.Button("Reset", key="edit_reset")],
-	[sg.Text("Output", size=(7,1)), sg.Input(os.getcwd(), key="edit_inputFolderOutput"), sg.FolderBrowse(key="folderBrowse")],
+	[sg.Text("Output", size=(7,1)), sg.Input(os.getcwd(), key="edit_inputFolderOutput"), sg.FolderBrowse(key="edit_folderBrowse")],
+	[
+		sg.Text("Chart format"),
+		sg.Radio("*.sm", group_id="edit2_format", enable_events=True, key="edit2_formatSm"), 
+		sg.Radio("*.ssc", group_id="edit2_format", enable_events=True, key="edit2_formatSsc", default=True), 
+	],
 	# [sg.Text(size=(40,1), key="output1")],
 	# [sg.In(), sg.FileBrowse(file_types=(("JSON Files", "*.json"),))],
 	[sg.Button("Go", key="edit_go"), sg.Button("Exit", key="edit_exit")],
@@ -65,6 +70,9 @@ edit_layout = [[
 ]]
 
 def edit_eventlistener(event: str, values, window): 
+
+	song_name = values["edit_inputTitle"]
+	song_folder_name = values["edit_inputSongFolderName"]
 
 	if event == "edit_autoPopulate" or event == "edit_inputFileMedium":
 
@@ -178,10 +186,13 @@ def edit_eventlistener(event: str, values, window):
 				chart_json["modes"] = [("single-mixed", values["edit_inputDiffSingleEdit"])]
 				chart_jsons.append(chart_json)
 
+		if values['edit2_formatSm']: format = 'sm'
+		elif values['edit2_formatSsc']: format = 'ssc'
+
 		if values["edit_inputFolderOutput"] == "":
-			output = os.getcwd()
+			output_folder = os.getcwd()
 		else:
-			output = values["edit_inputFolderOutput"]
+			output_folder = values["edit_inputFolderOutput"]
 
 		window["edit_go"].Update(disabled=True)
 		window["progressBar"].UpdateBar(0, 1)
@@ -193,24 +204,23 @@ def edit_eventlistener(event: str, values, window):
 			initial_steps = 0
 
 		chartfile = fnf_to_sm(
-			chart_jsons, 
-			window=window, 
-			song_name=values["edit_inputTitle"],
-			song_subtitle=values["edit_inputSubtitle"],
-			song_artist=values["edit_inputArtist"], 
-			song_charter=values["edit_inputCharter"], 
-			song_credit=values["edit_inputCredit"], 
-			song_banner_file_name=values["edit_inputBannerFileName"],
-			song_bg_file_name=values["edit_inputBGFileName"],
-			initial_steps=initial_steps
+			chart_jsons=chart_jsons, 
+			window=window,
+			metadata={
+				'name': song_name,
+				'subtitle': values["edit2_inputSubtitle"],
+				'artist': values["edit2_inputArtist"], 
+				'charter': values["edit2_inputCharter"], 
+				'credit': values["edit2_inputCredit"], 
+				'banner': values["edit2_inputBannerFileName"],
+				'background': values["edit2_inputBGFileName"],
+			},
+			initial_steps=initial_steps,
+			format=format
 		)
 
-		song_name = values["edit_inputTitle"]
-		output_folder = output
-		song_folder_name = values["edit_inputSongFolderName"]
-
 		os.makedirs(os.path.join(output_folder, song_folder_name), exist_ok=True)
-		with open(f"{os.path.join(output_folder, song_folder_name, song_name)}.sm", "w") as outfile:
+		with open(f"{os.path.join(output_folder, song_folder_name, song_name)}.{format}", "w") as outfile:
 			outfile.write(chartfile)
 
 		if values["edit_inputFileInst"] != "" and values["edit_inputFileVoices"] != "":
@@ -226,7 +236,7 @@ def edit_eventlistener(event: str, values, window):
 				inst_track=values["edit_inputFileInst"],
 				voices_track=values["edit_inputFileVoices"],
 				song_name=values["edit_inputTitle"], 
-				output_folder=output,
+				output_folder=output_folder,
 				song_folder_name=values["edit_inputSongFolderName"],
 				callback=callback,
 				window=window

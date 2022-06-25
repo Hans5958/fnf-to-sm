@@ -36,9 +36,9 @@ sg.theme("SystemDefault1")
 layout = [
 	[sg.Text(f"fnf-to-sm (Hans5958 fork) {VERSION}")],
 	[sg.TabGroup([[
-		sg.Tab('Stepmania', sm_layout, key='sm_tab'),
 		sg.Tab('Edit 2', edit2_layout, key='edit2_tab'),
 		sg.Tab('Edit 2 (Advanced)', edit2a_layout, key='edit2a_tab'),
+		sg.Tab('StepMania', sm_layout, key='sm_tab'),
 		sg.Tab('Edit', edit_layout, key='edit_tab'),
 		sg.Tab('Legacy', legacy_layout, key='legacy_tab'), 
 	]])],

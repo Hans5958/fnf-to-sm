@@ -15,7 +15,12 @@ col1_layout = [
 	[sg.Text("Inst", size=(7,1)), sg.Input(key="legacy_inputFileInst"), sg.FileBrowse(file_types=(("OGG Files", "*.ogg"),), key="legacy_fileBrowseInst")],
 	[sg.Text("Voices", size=(7,1)), sg.Input(key="legacy_inputFileVoices"), sg.FileBrowse(file_types=(("OGG Files", "*.ogg"),), key="legacy_fileBrowseVoices")],
 	[sg.Button("Auto-Populate", key="legacy_autoPopulate"), sg.Button("Reset", key="legacy_reset")],
-	[sg.Text("Output", size=(7,1)), sg.Input(os.getcwd(), key="legacy_inputFolderOutput"), sg.FolderBrowse(key="folderBrowse1")],
+	[sg.Text("Output", size=(7,1)), sg.Input(os.getcwd(), key="legacy_inputFolderOutput"), sg.FolderBrowse(key="legacy_folderBrowse")],
+	[
+		sg.Text("Chart format"),
+		sg.Radio("*.sm", group_id="edit2_format", enable_events=True, key="edit2_formatSm"), 
+		sg.Radio("*.ssc", group_id="edit2_format", enable_events=True, key="edit2_formatSsc", default=True), 
+	],
 	# [sg.Text(size=(40,1), key="output1")],
 	# [sg.In(), sg.FileBrowse(file_types=(("JSON Files", "*.json"),))],
 	[sg.Button("legacy_go", key="legacy_go"), sg.Button("Exit", key="legacy_exit")],
@@ -70,7 +75,11 @@ legacy_layout = [[
 	sg.Column(col2_layout),
 ]]
 
-def legacy_eventlistener(event: str, values, window): 
+def legacy_eventlistener(event: str, values, window):
+
+	song_name = values["edit2_inputTitle"]
+	song_folder_name = values["edit2_inputSongFolderName"]
+
 	if event.startswith("legacy_radioDerivateMixedFrom"):
 		if event == "legacy_radioDerivateMixedFromNone":
 			window["legacy_inputFileChallenge"].Update(disabled=False)
@@ -177,6 +186,9 @@ def legacy_eventlistener(event: str, values, window):
 				chart_json["modes"] = (("single", values["legacy_inputDiffSingleChallenge"]), ("double", values["legacy_inputDiffDoubleChallenge"]))
 				chart_jsons.append(chart_json)
 
+		if values['edit2_formatSm']: format = 'sm'
+		elif values['edit2_formatSsc']: format = 'ssc'
+
 		if values["legacy_inputFolderOutput"] == "":
 			output_folder = os.getcwd()
 		else:
@@ -192,26 +204,25 @@ def legacy_eventlistener(event: str, values, window):
 			initial_steps = 0
 
 		chartfile = fnf_to_sm(
-			chart_jsons, 
-			window=window, 
-			song_name=values["legacy_inputTitle"],
-			song_subtitle=values["legacy_inputSubtitle"],
-			song_artist=values["legacy_inputArtist"], 
-			song_charter=values["legacy_inputCharter"], 
-			song_credit=values["legacy_inputCredit"], 
-			song_banner_file_name=values["legacy_inputBannerFileName"],
-			song_bg_file_name=values["legacy_inputBGFileName"],
-			initial_steps=initial_steps
+			chart_jsons=chart_jsons, 
+			window=window,
+			metadata={
+				'name': song_name,
+				'subtitle': values["edit2_inputSubtitle"],
+				'artist': values["edit2_inputArtist"], 
+				'charter': values["edit2_inputCharter"], 
+				'credit': values["edit2_inputCredit"], 
+				'banner': values["edit2_inputBannerFileName"],
+				'background': values["edit2_inputBGFileName"],
+			},
+			initial_steps=initial_steps,
+			format=format
 		)
 
-		song_name = values["legacy_inputTitle"]
-		output_folder = output_folder
-		song_folder_name = values["legacy_inputSongFolderName"]
-
 		os.makedirs(os.path.join(output_folder, song_folder_name), exist_ok=True)
-		with open(f"{os.path.join(output_folder, song_folder_name, song_name)}.sm", "w") as outfile:
+		with open(f"{os.path.join(output_folder, song_folder_name, song_name)}.{format}", "w") as outfile:
 			outfile.write(chartfile)
-
+			
 		if values["legacy_inputFileInst"] != "" and values["legacy_inputFileVoices"] != "":
 
 			window["textProgress"].Update("Merging tracks...")

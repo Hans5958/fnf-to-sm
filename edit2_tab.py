@@ -15,6 +15,11 @@ col1_layout = [
 	[sg.Text("Voices", size=(7,1)), sg.Input(key="edit2_inputFileVoices"), sg.FileBrowse(file_types=(("OGG Files", "*.ogg"),), key="edit2_fileBrowseVoices")],
 	[sg.Button("Auto-Populate", key="edit2_autoPopulate"), sg.Button("Reset", key="edit2_reset")],
 	[sg.Text("Output", size=(7,1)), sg.Input(os.getcwd(), key="edit2_inputFolderOutput"), sg.FolderBrowse(key="folderBrowse")],
+	[
+		sg.Text("Chart format"),
+		sg.Radio("*.sm", group_id="edit2_format", enable_events=True, key="edit2_formatSm"), 
+		sg.Radio("*.ssc", group_id="edit2_format", enable_events=True, key="edit2_formatSsc", default=True), 
+	],
 	# [sg.Text(size=(40,1), key="output1")],
 	# [sg.In(), sg.FileBrowse(file_types=(("JSON Files", "*.json"),))],
 	[sg.Button("Go", key="edit2_go"), sg.Button("Exit", key="edit2_exit")],
@@ -128,7 +133,7 @@ def edit2_eventlistener(event: str, values, window):
 				chart_json = json.loads(chartfile.read().strip("\0"))
 				chart_json["diff"] = "Edit"
 				chart_json["infile"] = infile
-				chart_json["charter"] = "Easy Mixed"
+				chart_json["description"] = "Easy Mixed"
 				chart_json["modes"] = [("single-mixed", values["edit2_inputDiffSingleEasy"])]
 				chart_jsons.append(chart_json)
 
@@ -150,7 +155,7 @@ def edit2_eventlistener(event: str, values, window):
 				chart_json = json.loads(chartfile.read().strip("\0"))
 				chart_json["diff"] = "Edit"
 				chart_json["infile"] = infile
-				chart_json["charter"] = "Medium Mixed"
+				chart_json["description"] = "Medium Mixed"
 				chart_json["modes"] = [("single-mixed", values["edit2_inputDiffSingleMedium"])]
 				chart_jsons.append(chart_json)
 
@@ -172,9 +177,12 @@ def edit2_eventlistener(event: str, values, window):
 				chart_json = json.loads(chartfile.read().strip("\0"))
 				chart_json["diff"] = "Edit"
 				chart_json["infile"] = infile
-				chart_json["charter"] = "Hard Mixed"
+				chart_json["description"] = "Hard Mixed"
 				chart_json["modes"] = [("single-mixed", values["edit2_inputDiffSingleHard"])]
 				chart_jsons.append(chart_json)
+
+		if values['edit2_formatSm']: format = 'sm'
+		elif values['edit2_formatSsc']: format = 'ssc'
 
 		if values["edit2_inputFolderOutput"] == "":
 			output_folder = os.getcwd()
@@ -189,25 +197,25 @@ def edit2_eventlistener(event: str, values, window):
 			initial_steps = 1
 		else:
 			initial_steps = 0
-
+			
 		chartfile = fnf_to_sm(
-			chart_jsons, 
-			window=window, 
-			song_name=song_name,
-			song_subtitle=values["edit2_inputSubtitle"],
-			song_artist=values["edit2_inputArtist"], 
-			song_charter=values["edit2_inputCharter"], 
-			song_credit=values["edit2_inputCredit"], 
-			song_banner_file_name=values["edit2_inputBannerFileName"],
-			song_bg_file_name=values["edit2_inputBGFileName"],
-			initial_steps=initial_steps
+			chart_jsons=chart_jsons, 
+			window=window,
+			metadata={
+				'name': song_name,
+				'subtitle': values["edit2_inputSubtitle"],
+				'artist': values["edit2_inputArtist"], 
+				'charter': values["edit2_inputCharter"], 
+				'credit': values["edit2_inputCredit"], 
+				'banner': values["edit2_inputBannerFileName"],
+				'background': values["edit2_inputBGFileName"],
+			},
+			initial_steps=initial_steps,
+			format=format
 		)
 
-		song_name = values["edit_inputTitle"]
-		output_folder = output_folder
-
 		os.makedirs(os.path.join(output_folder, song_folder_name), exist_ok=True)
-		with open(f"{os.path.join(output_folder, song_folder_name, song_name)}.sm", "w") as outfile:
+		with open(f"{os.path.join(output_folder, song_folder_name, song_name)}.{format}", "w") as outfile:
 			outfile.write(chartfile)
 
 		if values["edit2_inputFileInst"] != "" and values["edit2_inputFileVoices"] != "":

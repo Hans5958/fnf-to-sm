@@ -9,12 +9,12 @@ from core import fnf_to_sm, merge_tracks, SM_EXT, SSC_EXT, FNF_EXT, parse_sm, sm
 sg.theme("SystemDefault1")
 
 col1_layout = [
-	[sg.Text("Simfile", size=(7,1)), sg.Input(key="sm_inputFileSimfile", enable_events=True), sg.FileBrowse(file_types=(("Stepmania simfile", "*.sm"),), key="sm_fileBrowseSimfile")],
+	[sg.Text("Simfile", size=(7,1)), sg.Input(key="sm_inputFileSimfile", enable_events=True), sg.FileBrowse(file_types=(("StepMania simfile", "*.sm"), ("StepMania simfile", "*.ssc")), key="sm_fileBrowseSimfile")],
 	[sg.Text("Easy", size=(7,1)), sg.Combo([], key="sm_comboEasyChart", size=(52,1), readonly=True)],
 	[sg.Text("Medium", size=(7,1)), sg.Combo([], key="sm_comboMediumChart", size=(52,1), readonly=True)],
 	[sg.Text("Hard", size=(7,1)), sg.Combo([], key="sm_comboHardChart", size=(52,1), readonly=True)],
 	[sg.Button("Auto-Populate", key="sm_autoPopulate"), sg.Button("Reset", key="sm_reset")],
-	[sg.Text("Output", size=(7,1)), sg.Input(os.path.join(os.getcwd(), 'output'), key="sm_inputFolderOutput"), sg.FolderBrowse(key="folderBrowse")],
+	[sg.Text("Output", size=(7,1)), sg.Input(os.path.join(os.getcwd(), 'output'), key="sm_inputFolderOutput"), sg.FolderBrowse(key="sm_folderBrowse")],
 	# [sg.Text(size=(40,1), key="output1")],
 	# [sg.In(), sg.FileBrowse(file_types=(("JSON Files", "*.json"),))],
 	[sg.Button("Go", key="sm_go"), sg.Button("Exit", key="sm_exit")],
@@ -60,11 +60,11 @@ def sm_eventlistener(event: str, values, window):
 				sm_chart = parse_sm(chartfile)
 				
 			index_temp = -1
-			for notes in sm_chart['notes']:
+			for notes in sm_chart.notes:
 				index_temp += 1
-				if (notes['type'] != "dance-single"):
+				if (notes.metadata['stepstype'] != "dance-single"):
 					continue
-				chart_notes.append(f"{notes['type']} {notes['author']} {notes['diff']} {notes['diffNum']} {notes['groove']}")
+				chart_notes.append(f"{notes.metadata['stepstype']} {notes.metadata['description']} {notes.metadata['difficulty']} {notes.metadata['meter']}")
 				chart_notes_index.append(index_temp)
 
 			window["sm_comboEasyChart"].Update(values=chart_notes)
@@ -72,10 +72,10 @@ def sm_eventlistener(event: str, values, window):
 			window["sm_comboHardChart"].Update(values=chart_notes)
 
 			if values["sm_inputId"] == "" or override:
-				window["sm_inputId"].Update(value=sm_chart['title'].lower().replace(' ', '-'))
+				window["sm_inputId"].Update(value=sm_chart.title.lower().replace(' ', '-'))
 			
 			if values["sm_inputTitle"] == "" or override:
-				window["sm_inputTitle"].Update(value=sm_chart['title'])
+				window["sm_inputTitle"].Update(value=sm_chart.title)
 
 				# print(chart_simfile)
 
@@ -102,18 +102,18 @@ def sm_eventlistener(event: str, values, window):
 				sm_chart = parse_sm(chartfile)
 
 			index_temp = -1
-			for notes in sm_chart['notes']:
+			for notes in sm_chart.notes:
 				index_temp += 1
-				if (notes['type'] != "dance-single"): 
+				if (notes.metadata['stepstype'] != "dance-single"):
 					continue
-				chart_notes.append(f"{notes['type']} {notes['author']} {notes['diff']} {notes['diffNum']} {notes['groove']}")
+				chart_notes.append(f"{notes.metadata['stepstype']} {notes.metadata['description']} {notes.metadata['difficulty']} {notes.metadata['meter']}")
 				chart_notes_index.append(index_temp)
 
 			easy_index = chart_notes_index[chart_notes.index(values["sm_comboEasyChart"])]
 			medium_index = chart_notes_index[chart_notes.index(values["sm_comboMediumChart"])]
 			hard_index = chart_notes_index[chart_notes.index(values["sm_comboHardChart"])]
 
-			sm_chart['title'] = values["sm_inputId"]
+			sm_chart.title = values["sm_inputId"]
 
 		if values["sm_inputFolderOutput"] == "":
 			output_folder = os.getcwd()
@@ -134,7 +134,7 @@ def sm_eventlistener(event: str, values, window):
 		elif values['sm_formatKadeCore']: format = 'kadecore'
 
 		if format == 'old':
-			sm_chart['title'] = 'Tutorial'
+			sm_chart.title = 'Tutorial'
 			os.makedirs(os.path.join(output_folder, 'data', 'tutorial'), exist_ok=True)
 			os.makedirs(os.path.join(output_folder, 'songs', 'tutorial'), exist_ok=True)
 			path_easy = os.path.join(output_folder, 'data', 'tutorial', 'tutorial-easy.json')
@@ -142,7 +142,7 @@ def sm_eventlistener(event: str, values, window):
 			path_hard = os.path.join(output_folder, 'data', 'tutorial', 'tutorial-hard.json')
 			path_song = os.path.join(output_folder, 'songs', 'tutorial', 'Inst.ogg')
 		if format == 'new':
-			sm_chart['title'] = 'Tutorial'
+			sm_chart.title = 'Tutorial'
 			os.makedirs(os.path.join(output_folder, 'data', 'tutorial'), exist_ok=True)
 			os.makedirs(os.path.join(output_folder, 'music'), exist_ok=True)
 			path_easy = os.path.join(output_folder, 'data', 'tutorial', 'tutorial-easy.json')
@@ -150,7 +150,7 @@ def sm_eventlistener(event: str, values, window):
 			path_hard = os.path.join(output_folder, 'data', 'tutorial', 'tutorial-hard.json')
 			path_song = os.path.join(output_folder, 'music', 'Tutorial-Inst.ogg')
 		elif format == 'kade':
-			sm_chart['title'] = 'Tutorial'
+			sm_chart.title = 'Tutorial'
 			os.makedirs(os.path.join(output_folder, 'data', 'songs', 'tutorial'), exist_ok=True)
 			os.makedirs(os.path.join(output_folder, 'songs', 'tutorial'), exist_ok=True)
 			path_easy = os.path.join(output_folder, 'data', 'songs', 'tutorial', 'tutorial-easy.json')
@@ -214,7 +214,7 @@ def sm_eventlistener(event: str, values, window):
 				outfile.write(json.dumps(week_json))
 			with open(os.path.join(output_folder, song_title, 'pack.json'), 'w') as outfile:
 				pack_json = {
-					"name": sm_chart['title'],
+					"name": sm_chart.title,
 					"description": "Converted with fnf-to-sm",
 					"restart": False,
 					"color": [170, 0, 255]
@@ -239,7 +239,7 @@ def sm_eventlistener(event: str, values, window):
 			with open(path_hard, "w") as outfile:
 				outfile.write(hard_chartfile)
 
-		shutil.copyfile(os.path.join(infile, '..', sm_chart['metadata']['music']), path_song)
+		shutil.copyfile(os.path.join(infile, '..', sm_chart.metadata['music']), path_song)
 
 		window["textProgress"].Update("All done!")
 		window["progressBar"].UpdateBar(1, 1)
