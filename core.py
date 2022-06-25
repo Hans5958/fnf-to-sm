@@ -350,17 +350,22 @@ def parse_sm(chartfile: TextIOWrapper):
 	title = ""
 	offset = 0
 	notes = []
-	line = "\n"
-	while len(line) > 0:
+	line = chartfile.readline()
+
+	while line.strip() != "#NOTES:":
+		tag_re = re.compile("#([A-Z]+):(.*?)\\s*?;?$")
+		re_match = tag_re.match(line.strip())
+		if re_match is not None:
+			metadata[re_match[1].lower()] = re_match[2]
 		line = chartfile.readline()
 
-		while line.strip() != "#NOTES:":
-			tag_re = re.compile("#([A-Z]+):(.*?)\\s*?;?$")
-			re_match = tag_re.match(line.strip())
-			if re_match is not None:
-				metadata[re_match[1].lower()] = re_match[2]
-			line = chartfile.readline()
+	title = metadata['title']
+	offset = float(metadata['offset']) * 1000 if 'OFFSET' in metadata else 0
+	parse_sm_bpms(metadata['bpms'])
 
+	while len(line) > 0:
+		line = chartfile.readline()
+		print(line)
 		# TODO support SSC
 		if line.strip() == "#NOTES:":
 			notes.append({
@@ -369,6 +374,7 @@ def parse_sm(chartfile: TextIOWrapper):
 				'diff': chartfile.readline().strip()[:-1],
 				'diffNum': chartfile.readline().strip()[:-1],
 				'groove': chartfile.readline().strip()[:-1],
+				'tempomarkers': tempomarkers,
 				'data': []
 			})
 			
@@ -380,14 +386,9 @@ def parse_sm(chartfile: TextIOWrapper):
 
 	print(metadata)
 
-	title = metadata['title']
-	offset = float(metadata['offset']) * 1000 if 'OFFSET' in metadata else 0
-	parse_sm_bpms(metadata['bpms'])
-
 	return {
 		'title': title,
 		'offset': offset,
-		'tempomarkers': tempomarkers,
 		'metadata': metadata,
 		'notes': notes
 	}
@@ -401,6 +402,7 @@ def sm_notes_to_fnf_notes(
 	fnf_notes = []
 	tracked_holds = {} # for tracking hold notes, need to add tails later
 	measure_notes = []
+	tempomarkers = chartfile['notes'][chosen_index]['tempomarkers']
 
 	for line in chartfile['notes'][chosen_index]['data']:
 
@@ -456,14 +458,13 @@ def sm_to_fnf(
 ):
 	title = chart_simfile['title']
 	offset = chart_simfile['offset']
-	tempomarkers = chart_simfile['tempomarkers']
 
 	# assemble the fnf json
 	chart_json = {}
 	chart_json["song"] = {}
 	chart_json["song"]["song"] = title
 	# chart_json["song"]["song"] = "Tutorial"
-	chart_json["song"]["bpm"] = tempomarkers[0].getBPM()
+	chart_json["song"]["bpm"] = chart_simfile['notes'][0]['tempomarkers'][0].getBPM()
 	chart_json["song"]["sections"] = 0
 	chart_json["song"]["needsVoices"] = False
 	chart_json["song"]["player1"] = "bf"
