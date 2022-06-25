@@ -26,6 +26,7 @@ from utils import fnf_to_sm, merge_tracks, SM_EXT, SSC_EXT, FNF_EXT
 from legacy_tab import legacy_layout, legacy_eventlistener
 from edit_tab import edit_layout, edit_eventlistener
 from edit2_tab import edit2_layout, edit2_eventlistener
+from edit2a_tab import edit2a_layout, edit2a_eventlistener
 
 VERSION = "v0.2.0-dev"
 
@@ -35,6 +36,7 @@ layout = [
 	[sg.Text(f"fnf-to-sm (Hans5958 fork) {VERSION}")],
 	[sg.TabGroup([[
 		sg.Tab('Edit 2', edit2_layout, key='edit2_tab'),
+		sg.Tab('Edit 2 (Advanced)', edit2a_layout, key='edit2a_tab'),
 		sg.Tab('Edit', edit_layout, key='edit_tab'),
 		sg.Tab('Legacy', legacy_layout, key='legacy_tab'), 
 	]])],
@@ -73,6 +75,9 @@ def main():
 			continue
 
 		elif edit2_eventlistener(event, values, window):
+			continue
+
+		elif edit2a_eventlistener(event, values, window):
 			continue
 
 		elif event.endswith('_reset'):

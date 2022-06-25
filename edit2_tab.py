@@ -28,32 +28,26 @@ col2_layout = [
 	[sg.Text("Credit", size=(6,1)), sg.Input("fnf-to-sm", key="edit2_inputCredit")],
 	[sg.Text("Difficulty Value")],
 	[
-		sg.Text("SBG", size=(3,1)),
-		sg.Input(0, key="edit2_inputDiffSingleBeginner", size=(2,1)), 
-		sg.Text("SEZ", size=(3,1)),
-		sg.Input(5, key="edit2_inputDiffSingleEasy", size=(2,1)), 
-		sg.Text("SMD", size=(3,1)), 
-		sg.Input(7, key="edit2_inputDiffSingleMedium", size=(2,1)), 
-		sg.Text("SHD", size=(3,1)),
-		sg.Input(9, key="edit2_inputDiffSingleHard", size=(2,1)),
-		sg.Text("SCH", size=(3,1)), 
-		sg.Input(0, key="edit2_inputDiffSingleChallenge", size=(2,1)),
-		sg.Text("SED", size=(3,1)), 
-		sg.Input(0, key="edit2_inputDiffSingleEdit", size=(2,1)),
-	],
-	[
-		sg.Text("DEZ", size=(3,1)), 
-		sg.Input(5, key="edit2_inputDiffDoubleEasy", size=(2,1)),
-		sg.Text("DMD", size=(3,1)), 
-		sg.Input(7, key="edit2_inputDiffDoubleMedium", size=(2,1)), 
-		sg.Text("DHD", size=(3,1)),
-		sg.Input(9, key="edit2_inputDiffDoubleHard", size=(2,1)),
-		sg.Text("CEZ", size=(3,1)), 
-		sg.Input(5, key="edit2_inputDiffCoupleEasy", size=(2,1)),
-		sg.Text("CMD", size=(3,1)), 
-		sg.Input(7, key="edit2_inputDiffCoupleMedium", size=(2,1)),
-		sg.Text("CHD", size=(3,1)),
-		sg.Input(9, key="edit2_inputDiffCoupleHard", size=(2,1)), 
+		sg.Column([
+			[sg.Text("")],
+			[sg.Text("Single")],
+			[sg.Text("Double")],
+		]),
+		sg.Column([
+			[sg.Text("Easy")],
+			[sg.Input(5, key="edit2_inputDiffSingleEasy", size=(5,1))],
+			[sg.Input(5, key="edit2_inputDiffDoubleEasy", size=(5,1))],
+		]),
+		sg.Column([
+			[sg.Text("Med")],
+			[sg.Input(7, key="edit2_inputDiffSingleMedium", size=(5,1))],
+			[sg.Input(7, key="edit2_inputDiffDoubleMedium", size=(5,1))],
+		]),
+		sg.Column([
+			[sg.Text("Hard")],
+			[sg.Input(9, key="edit2_inputDiffSingleHard", size=(5,1))],
+			[sg.Input(9, key="edit2_inputDiffDoubleHard", size=(5,1))],
+		]),
 	],
 	[sg.Text("Banner File Name", size=(15,1)), sg.Input(key="edit2_inputBannerFileName", size=(35, 1))],
 	[sg.Text("BG File Name", size=(15,1)), sg.Input(key="edit2_inputBGFileName", size=(35, 1))],
@@ -115,7 +109,7 @@ def edit2_eventlistener(event: str, values, window):
 	elif event == "edit2_go":
 
 		chart_jsons = []
-
+		
 		infile = values["edit2_inputFileEasy"]
 		if infile != "" and os.path.isfile(infile):
 			with open(infile, "r") as chartfile:
@@ -125,8 +119,8 @@ def edit2_eventlistener(event: str, values, window):
 				chart_json["modes"] = [
 					("single", values["edit2_inputDiffSingleEasy"]),
 					("double", values["edit2_inputDiffDoubleEasy"]), 
-					("couple", values["edit2_inputDiffCoupleEasy"]), 
-					# ("routine", values["edit2_inputDiffCoupleEasy"])
+					("couple", values["edit2_inputDiffSingleEasy"]), 
+					# ("routine", values["edit2_inputDiffSingleEasy"])
 				]
 				chart_jsons.append(chart_json)
 
@@ -147,8 +141,8 @@ def edit2_eventlistener(event: str, values, window):
 				chart_json["modes"] = [
 					("single", values["edit2_inputDiffSingleMedium"]),
 					("double", values["edit2_inputDiffDoubleMedium"]), 
-					("couple", values["edit2_inputDiffCoupleMedium"]), 
-					# ("routine", values["edit2_inputDiffCoupleMedium"])
+					("couple", values["edit2_inputDiffSingleMedium"]), 
+					# ("routine", values["edit2_inputDiffSingleMedium"])
 				]
 				chart_jsons.append(chart_json)
 
@@ -169,8 +163,8 @@ def edit2_eventlistener(event: str, values, window):
 				chart_json["modes"] = [
 					("single", values["edit2_inputDiffSingleHard"]),
 					("double", values["edit2_inputDiffDoubleHard"]), 
-					("couple", values["edit2_inputDiffCoupleHard"]), 
-					# ("routine", values["edit2_inputDiffCoupleHard"])
+					("couple", values["edit2_inputDiffSingleHard"]), 
+					# ("routine", values["edit2_inputDiffSingleHard"])
 				]
 				chart_jsons.append(chart_json)
 
