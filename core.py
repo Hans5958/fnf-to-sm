@@ -17,6 +17,7 @@
 
 # Built from the original chart-to-sm.js by Paturages, released under GPL3 with his permission
 
+from io import TextIOWrapper
 import re
 import json
 import math
@@ -37,6 +38,8 @@ STEP_TICKS = 12
 
 NUM_COLUMNS_DOUBLE = 8
 NUM_COLUMNS_SINGLE = 4
+
+NOTES_RE = re.compile("^[\\dM][\\dM][\\dM][\\dM]$")
 
 # borrowed from my Sharktooth code
 class TempoMarker:
@@ -98,8 +101,6 @@ def fnf_to_sm(
 	song_charter, 
 	song_credit, 
 	song_subtitle, 
-	output_folder, 
-	song_folder_name,
 	song_banner_file_name,
 	song_bg_file_name,
 	initial_steps
@@ -286,7 +287,7 @@ def fnf_to_sm(
 								for digit in notes[i]:
 									sm_notes += str(digit)
 								sm_notes += '\n'
-					elif mode == "single-challenge" or mode == 'single-merged':
+					elif mode == "single-challenge" or mode == 'single-mixed':
 						for i in range(measureStart, measureEnd, noteStep):
 							if i not in notes_merged:
 								sm_notes += '0'*NUM_COLUMNS_SINGLE + '\n'
@@ -307,11 +308,7 @@ def fnf_to_sm(
 				window['progressBar'].UpdateBar(steps_made, steps_to_make)
 
 	# output simfile
-	os.makedirs(os.path.join(output_folder, song_folder_name), exist_ok=True)
-	with open(f"{os.path.join(output_folder, song_folder_name, song_name)}.sm", "w") as outfile:
-		outfile.write(sm_header)
-		if len(sm_notes) > 0:
-			outfile.write(sm_notes)
+	return sm_header + sm_notes
 
 def merge_tracks(
 	inst_track, 
@@ -336,21 +333,6 @@ def merge_tracks(
 	return thread
 	# ffmpeg.input(inst_track).input(voices_track).filter('amix', inputs=2, duration='longest').output(f"{os.path.join(output_folder, song_name, song_name)}.ogg").run()
 
-# get simple header tag value
-def get_tag_value(line, tag):
-	tag_re = re.compile("#{}:(.+)\\s*;".format(tag))
-	re_match = tag_re.match(line)
-	if re_match != None:
-		value = re_match.group(1)
-		return value
-	# try again without a trailing semicolon
-	tag_re = re.compile("#{}:(.+)\\s*".format(tag))
-	re_match = tag_re.match(line)
-	if re_match != None:
-		value = re_match.group(1)
-		return value
-	return None
-
 # parse the BPMS out of a simfile
 def parse_sm_bpms(bpm_string):
 	sm_bpms = bpm_string.split(",")
@@ -363,116 +345,155 @@ def parse_sm_bpms(bpm_string):
 			current_time = tickToTime(current_tick)
 			tempomarkers.append(TempoMarker(current_bpm, current_tick, current_time))
 
-def sm_to_fnf(infile):
-	title = "Simfile"
-	fnf_notes = []
-	section_number = 0
+def parse_sm(chartfile: TextIOWrapper):
+	metadata = {}
+	title = ""
 	offset = 0
-	print("Converting {} to blammed.json".format(infile))
-	with open(infile, "r") as chartfile:
+	notes = []
+	line = "\n"
+	while len(line) > 0:
 		line = chartfile.readline()
-		while len(line) > 0:
-			value = get_tag_value(line, "TITLE")
-			if value != None:
-				title = value
-				line = chartfile.readline()
-				continue
-			value = get_tag_value(line, "OFFSET")
-			if value != None:
-				offset = float(value) * 1000
-				line = chartfile.readline()
-				continue
-			value = get_tag_value(line, "BPMS")
-			if value != None:
-				parse_sm_bpms(value)
-				line = chartfile.readline()
-				continue
 
-			# regex for a sm note row
-			notes_re = re.compile("^[\\dM][\\dM][\\dM][\\dM]$")
-
-			# TODO support SSC
-			if line.strip() == "#NOTES:":
-				line = chartfile.readline()
-				if line.strip() != "dance-single:":
-					line = chartfile.readline()
-					continue
-				chartfile.readline()
-				line = chartfile.readline()
-				
-				# TODO support difficulties other than Challenge
-				if line.strip() != "Challenge:":
-				#if line.strip() != "Hard:":
-					line = chartfile.readline()
-					continue
-				chartfile.readline()
-				chartfile.readline()
-				line = chartfile.readline()
-				tracked_holds = {} # for tracking hold notes, need to add tails later
-				while line.strip()[0] != ";":
-					measure_notes = []
-					while line.strip()[0] not in (",",";"):
-						if notes_re.match(line.strip()) != None:
-							measure_notes.append(line.strip())
-						line = chartfile.readline()
-					
-					# for ticks-to-time, ticks don't have to be integer :)
-					ticks_per_row = float(MEASURE_TICKS) / len(measure_notes)
-					
-					fnf_section = {}
-					fnf_section["lengthInSteps"] = 16
-					fnf_section["bpm"] = tickToBPM(section_number * MEASURE_TICKS)
-					if len(fnf_notes) > 0:
-						fnf_section["changeBPM"] = fnf_section["bpm"] != fnf_notes[-1]["bpm"]
-					else:
-						fnf_section["changeBPM"] = False
-					fnf_section["mustHitSection"] = True
-					fnf_section["typeOfSection"] = 0
-					
-					section_notes = []
-					for i in range(len(measure_notes)):
-						notes_row = measure_notes[i]
-						for j in range(len(notes_row)):
-							if notes_row[j] in ("1","2","4"):
-								note = [tickToTime(MEASURE_TICKS * section_number + i * ticks_per_row) - offset, j, 0]
-								section_notes.append(note)
-								if notes_row[j] in ("2","4"):
-									tracked_holds[j] = note
-							# hold tails
-							elif notes_row[j] == "3":
-								if j in tracked_holds:
-									note = tracked_holds[j]
-									del tracked_holds[j]
-									note[2] = tickToTime(MEASURE_TICKS * section_number + i * ticks_per_row) - offset - note[0]
-					
-					fnf_section["sectionNotes"] = section_notes
-					
-					section_number += 1
-					fnf_notes.append(fnf_section)
-					
-					# don't skip the ending semicolon
-					if line.strip()[0] != ";":
-						line = chartfile.readline()
-			
+		while line.strip() != "#NOTES:":
+			tag_re = re.compile("#([A-Z]+):(.*?)\\s*?;?$")
+			re_match = tag_re.match(line.strip())
+			if re_match is not None:
+				metadata[re_match[1].lower()] = re_match[2]
 			line = chartfile.readline()
+
+		# TODO support SSC
+		if line.strip() == "#NOTES:":
+			notes.append({
+				'type': chartfile.readline().strip()[:-1],
+				'author': chartfile.readline().strip()[:-1],
+				'diff': chartfile.readline().strip()[:-1],
+				'diffNum': chartfile.readline().strip()[:-1],
+				'groove': chartfile.readline().strip()[:-1],
+				'data': []
+			})
 			
+			line = chartfile.readline().strip()
+			while line[0] != ";":
+				notes[-1]['data'].append(line)
+				line = chartfile.readline().strip()
+			line = chartfile.readline()
+
+	print(metadata)
+
+	title = metadata['title']
+	offset = float(metadata['offset']) * 1000 if 'OFFSET' in metadata else 0
+	parse_sm_bpms(metadata['bpms'])
+
+	return {
+		'title': title,
+		'offset': offset,
+		'tempomarkers': tempomarkers,
+		'metadata': metadata,
+		'notes': notes
+	}
+
+def sm_notes_to_fnf_notes(
+	chartfile,
+	offset,
+	chosen_index
+): 
+	section_number = 0
+	fnf_notes = []
+	tracked_holds = {} # for tracking hold notes, need to add tails later
+	measure_notes = []
+
+	for line in chartfile['notes'][chosen_index]['data']:
+
+		if line[0] not in (",",";"):
+			if NOTES_RE.match(line.strip()) != None:
+				measure_notes.append(line)
+			continue			
+		
+		# for ticks-to-time, ticks don't have to be integer :)
+		ticks_per_row = float(MEASURE_TICKS) / len(measure_notes)
+		
+		fnf_section = {}
+		fnf_section["lengthInSteps"] = 16
+		fnf_section["bpm"] = tickToBPM(section_number * MEASURE_TICKS)
+		if len(fnf_notes) > 0:
+			fnf_section["changeBPM"] = fnf_section["bpm"] != fnf_notes[-1]["bpm"]
+		else:
+			fnf_section["changeBPM"] = False
+		fnf_section["mustHitSection"] = True
+		fnf_section["typeOfSection"] = 0
+		
+		section_notes = []
+		for i in range(len(measure_notes)):
+			notes_row = measure_notes[i]
+			for j in range(len(notes_row)):
+				if notes_row[j] in ("1","2","4"):
+					note = [tickToTime(MEASURE_TICKS * section_number + i * ticks_per_row) - offset, j, 0]
+					section_notes.append(note)
+					if notes_row[j] in ("2","4"):
+						tracked_holds[j] = note
+				# hold tails
+				elif notes_row[j] == "3":
+					if j in tracked_holds:
+						note = tracked_holds[j]
+						del tracked_holds[j]
+						note[2] = tickToTime(MEASURE_TICKS * section_number + i * ticks_per_row) - offset - note[0]
+		
+		fnf_section["sectionNotes"] = section_notes
+		
+		section_number += 1
+		fnf_notes.append(fnf_section)
+
+		measure_notes = []
+			
+	return fnf_notes
+			
+
+def sm_to_fnf(
+	chart_simfile, 
+	easy_index: int, 
+	medium_index: int, 
+	hard_index: int,
+):
+	title = chart_simfile['title']
+	offset = chart_simfile['offset']
+	tempomarkers = chart_simfile['tempomarkers']
+
 	# assemble the fnf json
 	chart_json = {}
 	chart_json["song"] = {}
-	#chart_json["song"]["song"] = title
-	chart_json["song"]["song"] = "Blammed"
-	chart_json["song"]["notes"] = fnf_notes
+	chart_json["song"]["song"] = title
+	# chart_json["song"]["song"] = "Tutorial"
 	chart_json["song"]["bpm"] = tempomarkers[0].getBPM()
 	chart_json["song"]["sections"] = 0
 	chart_json["song"]["needsVoices"] = False
 	chart_json["song"]["player1"] = "bf"
-	chart_json["song"]["player2"] = "pico"
+	chart_json["song"]["player2"] = "gf"
 	chart_json["song"]["sectionLengths"] = []
+	chart_json["song"]["events"] = []
 	chart_json["song"]["speed"] = 2.0
-	
-	#with open("{}.json".format(title), "w") as outfile:
-	with open("blammed.json".format(title), "w") as outfile:
-		json.dump(chart_json, outfile)
+	chart_json["generatedBy"] = 'fnf-to-sm'
+
+	ret_list = []
+
+	if easy_index > -1:
+		chart_json["song"]["notes"] = sm_notes_to_fnf_notes(chart_simfile, offset, easy_index)
+		ret_list.append(json.dumps(chart_json))
+	else:
+		ret_list.append(None)
+
+	if medium_index > -1:
+		chart_json["song"]["notes"] = sm_notes_to_fnf_notes(chart_simfile, offset, medium_index)
+		ret_list.append(json.dumps(chart_json))
+	else:
+		ret_list.append(None)
+
+	if hard_index > -1:
+		chart_json["song"]["notes"] = sm_notes_to_fnf_notes(chart_simfile, offset, hard_index)
+		ret_list.append(json.dumps(chart_json))
+	else:
+		ret_list.append(None)
+
+	return ret_list
 
 # def usage():
 # 	print("FNF SM converter")

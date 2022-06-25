@@ -2,7 +2,7 @@ import json
 import os
 # import ffmpeg
 import PySimpleGUI as sg
-from utils import fnf_to_sm, merge_tracks, SM_EXT, SSC_EXT, FNF_EXT
+from core import fnf_to_sm, merge_tracks, SM_EXT, SSC_EXT, FNF_EXT
 
 sg.theme("SystemDefault1")
 
@@ -121,7 +121,7 @@ def edit_eventlistener(event: str, values, window):
 				chart_json["modes"] = [
 					("double", values["edit_inputDiffDoubleEasy"]), 
 					("couple", values["edit_inputDiffCoupleEasy"]), 
-					("single-merged", values["edit_inputDiffSingleEasy"])
+					("single-mixed", values["edit_inputDiffSingleEasy"])
 				]
 				chart_jsons.append(chart_json)
 
@@ -149,7 +149,7 @@ def edit_eventlistener(event: str, values, window):
 				chart_json = json.loads(chartfile.read().strip("\0"))
 				chart_json["diff"] = "Hard"
 				chart_json["infile"] = infile
-				chart_json["modes"] = [("single-merged", values["edit_inputDiffSingleHard"])]
+				chart_json["modes"] = [("single-mixed", values["edit_inputDiffSingleHard"])]
 				chart_jsons.append(chart_json)
 
 		infile = values["edit_inputFileHard"]
@@ -175,7 +175,7 @@ def edit_eventlistener(event: str, values, window):
 				chart_json = json.loads(chartfile.read().strip("\0"))
 				chart_json["diff"] = "Edit"
 				chart_json["infile"] = infile
-				chart_json["modes"] = [("single-merged", values["edit_inputDiffSingleEdit"])]
+				chart_json["modes"] = [("single-mixed", values["edit_inputDiffSingleEdit"])]
 				chart_jsons.append(chart_json)
 
 		if values["edit_inputFolderOutput"] == "":
@@ -185,14 +185,14 @@ def edit_eventlistener(event: str, values, window):
 
 		window["edit_go"].Update(disabled=True)
 		window["progressBar"].UpdateBar(0, 1)
-		window["textProgress"].Update("Converting FnF .json to .sm...")
+		window["textProgress"].Update("Converting FNF .json to .sm...")
 
 		if values["edit_inputFileInst"] != "" and values["edit_inputFileVoices"] != "":
 			initial_steps = 1
 		else:
 			initial_steps = 0
 
-		fnf_to_sm(
+		chartfile = fnf_to_sm(
 			chart_jsons, 
 			window=window, 
 			song_name=values["edit_inputTitle"],
@@ -202,10 +202,16 @@ def edit_eventlistener(event: str, values, window):
 			song_credit=values["edit_inputCredit"], 
 			song_banner_file_name=values["edit_inputBannerFileName"],
 			song_bg_file_name=values["edit_inputBGFileName"],
-			output_folder=output,
-			song_folder_name=values["edit_inputSongFolderName"],
 			initial_steps=initial_steps
 		)
+
+		song_name = values["edit_inputTitle"]
+		output_folder = output
+		song_folder_name = values["edit_inputSongFolderName"]
+
+		os.makedirs(os.path.join(output_folder, song_folder_name), exist_ok=True)
+		with open(f"{os.path.join(output_folder, song_folder_name, song_name)}.sm", "w") as outfile:
+			outfile.write(chartfile)
 
 		if values["edit_inputFileInst"] != "" and values["edit_inputFileVoices"] != "":
 

@@ -2,7 +2,7 @@ import json
 import os
 # import ffmpeg
 import PySimpleGUI as sg
-from utils import fnf_to_sm, merge_tracks, SM_EXT, SSC_EXT, FNF_EXT
+from core import fnf_to_sm, merge_tracks, SM_EXT, SSC_EXT, FNF_EXT
 
 sg.theme("SystemDefault1")
 
@@ -44,7 +44,6 @@ col2_layout = [
 		sg.Text("DBG", size=(4,1)),
 		sg.Input(3, key="legacy_inputDiffDoubleBeginner", size=(2,1)), 
 		sg.Text("DEZ", size=(4,1)), 
-		sg.Input(5, key="legacy_inputDiffDoubleEasy", size=(2,1)),
 		sg.Text("DMD", size=(4,1)), 
 		sg.Input(7, key="legacy_inputDiffDoubleMedium", size=(2,1)), 
 		sg.Text("DHD", size=(4,1)),
@@ -54,11 +53,11 @@ col2_layout = [
 	],
 	[sg.Text("Derivate mixed Challenge parts from...")],
 	[
-		sg.Radio("Beginner", group_id="derivateMixedFrom", enable_events=True, key="legacy_radioDerivateMixedFromBeginner"), 
-		sg.Radio("Easy", group_id="derivateMixedFrom", enable_events=True, key="legacy_radioDerivateMixedFromEasy"), 
-		sg.Radio("Medium", group_id="derivateMixedFrom", enable_events=True, key="legacy_radioDerivateMixedFromMedium"), 
-		sg.Radio("Hard", default=True, group_id="derivateMixedFrom", enable_events=True, key="legacy_radioDerivateMixedFromHard"), 
-		sg.Radio("None", group_id="derivateMixedFrom", enable_events=True, key="legacy_radioDerivateMixedFromNone")
+		sg.Radio("Beginner", group_id="legacy_derivateMixedFrom", enable_events=True, key="legacy_radioDerivateMixedFromBeginner"), 
+		sg.Radio("Easy", group_id="legacy_derivateMixedFrom", enable_events=True, key="legacy_radioDerivateMixedFromEasy"), 
+		sg.Radio("Medium", group_id="legacy_derivateMixedFrom", enable_events=True, key="legacy_radioDerivateMixedFromMedium"), 
+		sg.Radio("Hard", default=True, group_id="legacy_derivateMixedFrom", enable_events=True, key="legacy_radioDerivateMixedFromHard"), 
+		sg.Radio("None", group_id="legacy_derivateMixedFrom", enable_events=True, key="legacy_radioDerivateMixedFromNone")
 	],
 	[sg.Text("Banner File Name", size=(15,1)), sg.Input(key="legacy_inputBannerFileName", size=(35, 1))],
 	[sg.Text("BG File Name", size=(15,1)), sg.Input(key="legacy_inputBGFileName", size=(35, 1))],
@@ -184,14 +183,14 @@ def legacy_eventlistener(event: str, values, window):
 
 		window["legacy_go"].Update(disabled=True)
 		window["progressBar"].UpdateBar(0, 1)
-		window["textProgress"].Update("Converting FnF .json to .sm...")
+		window["textProgress"].Update("Converting FNF .json to .sm...")
 
 		if values["legacy_inputFileInst"] != "" and values["legacy_inputFileVoices"] != "":
 			initial_steps = 1
 		else:
 			initial_steps = 0
 
-		fnf_to_sm(
+		chartfile = fnf_to_sm(
 			chart_jsons, 
 			window=window, 
 			song_name=values["legacy_inputTitle"],
@@ -201,10 +200,16 @@ def legacy_eventlistener(event: str, values, window):
 			song_credit=values["legacy_inputCredit"], 
 			song_banner_file_name=values["legacy_inputBannerFileName"],
 			song_bg_file_name=values["legacy_inputBGFileName"],
-			output_folder=output,
-			song_folder_name=values["legacy_inputSongFolderName"],
 			initial_steps=initial_steps
 		)
+
+		song_name = values["legacy_inputTitle"]
+		output_folder = output
+		song_folder_name = values["legacy_inputSongFolderName"]
+
+		os.makedirs(os.path.join(output_folder, song_folder_name), exist_ok=True)
+		with open(f"{os.path.join(output_folder, song_folder_name, song_name)}.sm", "w") as outfile:
+			outfile.write(chartfile)
 
 		if values["legacy_inputFileInst"] != "" and values["legacy_inputFileVoices"] != "":
 

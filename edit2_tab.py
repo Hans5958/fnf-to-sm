@@ -3,7 +3,7 @@ import os
 import shutil
 # import ffmpeg
 import PySimpleGUI as sg
-from utils import fnf_to_sm, merge_tracks, SM_EXT, SSC_EXT, FNF_EXT
+from core import fnf_to_sm, merge_tracks, SM_EXT, SSC_EXT, FNF_EXT
 
 sg.theme("SystemDefault1")
 
@@ -151,7 +151,7 @@ def edit2_eventlistener(event: str, values, window):
 				chart_json["diff"] = "Edit"
 				chart_json["infile"] = infile
 				chart_json["charter"] = "Medium Mixed"
-				chart_json["modes"] = [("single-merged", values["edit2_inputDiffSingleMedium"])]
+				chart_json["modes"] = [("single-mixed", values["edit2_inputDiffSingleMedium"])]
 				chart_jsons.append(chart_json)
 
 		infile = values["edit2_inputFileHard"]
@@ -183,14 +183,14 @@ def edit2_eventlistener(event: str, values, window):
 
 		window["edit2_go"].Update(disabled=True)
 		window["progressBar"].UpdateBar(0, 1)
-		window["textProgress"].Update("Converting FnF .json to .sm...")
+		window["textProgress"].Update("Converting FNF .json to .sm...")
 
 		if values["edit2_inputFileInst"] != "" and values["edit2_inputFileVoices"] != "":
 			initial_steps = 1
 		else:
 			initial_steps = 0
 
-		fnf_to_sm(
+		chartfile = fnf_to_sm(
 			chart_jsons, 
 			window=window, 
 			song_name=song_name,
@@ -200,10 +200,15 @@ def edit2_eventlistener(event: str, values, window):
 			song_credit=values["edit2_inputCredit"], 
 			song_banner_file_name=values["edit2_inputBannerFileName"],
 			song_bg_file_name=values["edit2_inputBGFileName"],
-			output_folder=output_folder,
-			song_folder_name=song_folder_name,
 			initial_steps=initial_steps
 		)
+
+		song_name = values["edit_inputTitle"]
+		output_folder = output_folder
+
+		os.makedirs(os.path.join(output_folder, song_folder_name), exist_ok=True)
+		with open(f"{os.path.join(output_folder, song_folder_name, song_name)}.sm", "w") as outfile:
+			outfile.write(chartfile)
 
 		if values["edit2_inputFileInst"] != "" and values["edit2_inputFileVoices"] != "":
 
