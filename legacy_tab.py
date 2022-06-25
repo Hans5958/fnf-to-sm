@@ -44,6 +44,7 @@ col2_layout = [
 		sg.Text("DBG", size=(4,1)),
 		sg.Input(3, key="legacy_inputDiffDoubleBeginner", size=(2,1)), 
 		sg.Text("DEZ", size=(4,1)), 
+		sg.Input(3, key="legacy_inputDiffDoubleEasy", size=(2,1)), 
 		sg.Text("DMD", size=(4,1)), 
 		sg.Input(7, key="legacy_inputDiffDoubleMedium", size=(2,1)), 
 		sg.Text("DHD", size=(4,1)),
@@ -83,7 +84,7 @@ def legacy_eventlistener(event: str, values, window):
 	elif event == "legacy_autoPopulate" or event == "legacy_inputFileMedium":
 
 		infile = values["legacy_inputFileMedium"]
-		override = event == "legacy_autoPopulate"
+		override = event.startswith("autoPopulate")
 
 		if os.path.isfile(infile):
 
@@ -177,9 +178,9 @@ def legacy_eventlistener(event: str, values, window):
 				chart_jsons.append(chart_json)
 
 		if values["legacy_inputFolderOutput"] == "":
-			output = os.getcwd()
+			output_folder = os.getcwd()
 		else:
-			output = values["legacy_inputFolderOutput"]
+			output_folder = values["legacy_inputFolderOutput"]
 
 		window["legacy_go"].Update(disabled=True)
 		window["progressBar"].UpdateBar(0, 1)
@@ -204,7 +205,7 @@ def legacy_eventlistener(event: str, values, window):
 		)
 
 		song_name = values["legacy_inputTitle"]
-		output_folder = output
+		output_folder = output_folder
 		song_folder_name = values["legacy_inputSongFolderName"]
 
 		os.makedirs(os.path.join(output_folder, song_folder_name), exist_ok=True)
@@ -224,7 +225,7 @@ def legacy_eventlistener(event: str, values, window):
 				inst_track=values["legacy_inputFileInst"],
 				voices_track=values["legacy_inputFileVoices"],
 				song_name=values["legacy_inputTitle"], 
-				output_folder=output,
+				output_folder=output_folder,
 				song_folder_name=values["legacy_inputSongFolderName"],
 				callback=callback,
 				window=window

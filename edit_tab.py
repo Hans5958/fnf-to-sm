@@ -69,7 +69,7 @@ def edit_eventlistener(event: str, values, window):
 	if event == "edit_autoPopulate" or event == "edit_inputFileMedium":
 
 		infile = values["edit_inputFileMedium"]
-		override = event == "autoPopulate"
+		override = event.startswith("autoPopulate")
 
 		if os.path.isfile(infile):
 

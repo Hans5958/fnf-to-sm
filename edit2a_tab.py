@@ -40,35 +40,35 @@ col2_layout = [
 		sg.Column([
 			[sg.Text("BG")],
 			[sg.Input(0, key="edit2a_inputDiffSingleBeginner", size=(3,1))],
-			[sg.Input(0, key="edit2a_inputDiffSingleXBeginner", size=(3,1))],
+			[sg.Input(0, key="edit2a_inputDiffSingleMixedBeginner", size=(3,1))],
 			[sg.Input(0, key="edit2a_inputDiffDoubleBeginner", size=(3,1))],
 			[sg.Input(0, key="edit2a_inputDiffCoupleBeginner", size=(3,1))],
 		]),
 		sg.Column([
 			[sg.Text("EZ")],
 			[sg.Input(5, key="edit2a_inputDiffSingleEasy", size=(3,1))],
-			[sg.Input(5, key="edit2a_inputDiffSingleXEasy", size=(3,1))],
+			[sg.Input(5, key="edit2a_inputDiffSingleMixedEasy", size=(3,1))],
 			[sg.Input(5, key="edit2a_inputDiffDoubleEasy", size=(3,1))],
 			[sg.Input(5, key="edit2a_inputDiffCoupleEasy", size=(3,1))],
 		]),
 		sg.Column([
 			[sg.Text("MD")],
 			[sg.Input(7, key="edit2a_inputDiffSingleMedium", size=(3,1))],
-			[sg.Input(7, key="edit2a_inputDiffSingleXMedium", size=(3,1))],
+			[sg.Input(7, key="edit2a_inputDiffSingleMixedMedium", size=(3,1))],
 			[sg.Input(7, key="edit2a_inputDiffDoubleMedium", size=(3,1))],
 			[sg.Input(7, key="edit2a_inputDiffCoupleMedium", size=(3,1))],
 		]),
 		sg.Column([
 			[sg.Text("HD")],
 			[sg.Input(9, key="edit2a_inputDiffSingleHard", size=(3,1))],
-			[sg.Input(9, key="edit2a_inputDiffSingleXHard", size=(3,1))],
+			[sg.Input(9, key="edit2a_inputDiffSingleMixedHard", size=(3,1))],
 			[sg.Input(9, key="edit2a_inputDiffDoubleHard", size=(3,1))],
 			[sg.Input(9, key="edit2a_inputDiffCoupleHard", size=(3,1))],
 		]),
 		sg.Column([
 			[sg.Text("CH")],
 			[sg.Input(0, key="edit2a_inputDiffSingleChallenge", size=(3,1))],
-			[sg.Input(0, key="edit2a_inputDiffSingleXChallenge", size=(3,1))],
+			[sg.Input(0, key="edit2a_inputDiffSingleMixedChallenge", size=(3,1))],
 			[sg.Input(0, key="edit2a_inputDiffDoubleChallenge", size=(3,1))],
 			[sg.Input(0, key="edit2a_inputDiffCoupleChallenge", size=(3,1))],
 		]),
@@ -91,7 +91,7 @@ def edit2a_eventlistener(event: str, values, window):
 	if event == "edit2a_autoPopulate" or event == "edit2a_inputFileMedium":
 
 		infile = values["edit2a_inputFileMedium"]
-		override = event == "autoPopulate"
+		override = event.startswith("autoPopulate")
 
 		if os.path.isfile(infile):
 
@@ -153,7 +153,7 @@ def edit2a_eventlistener(event: str, values, window):
 				chart_json["diff"] = "Edit"
 				chart_json["infile"] = infile
 				chart_json["charter"] = "Beginner Mixed"
-				chart_json["modes"] = [("single", values["edit2a_inputDiffSingleXBeginner"])]
+				chart_json["modes"] = [("single-mixed", values["edit2a_inputDiffSingleMixedBeginner"])]
 				chart_jsons.append(chart_json)
 
 		infile = values["edit2a_inputFileEasy"]
@@ -175,7 +175,7 @@ def edit2a_eventlistener(event: str, values, window):
 				chart_json["diff"] = "Edit"
 				chart_json["infile"] = infile
 				chart_json["charter"] = "Easy Mixed"
-				chart_json["modes"] = [("single", values["edit2a_inputDiffSingleXEasy"])]
+				chart_json["modes"] = [("single-mixed", values["edit2a_inputDiffSingleMixedEasy"])]
 				chart_jsons.append(chart_json)
 
 		infile = values["edit2a_inputFileMedium"]
@@ -197,7 +197,7 @@ def edit2a_eventlistener(event: str, values, window):
 				chart_json["diff"] = "Edit"
 				chart_json["infile"] = infile
 				chart_json["charter"] = "Medium Mixed"
-				chart_json["modes"] = [("single-mixed", values["edit2a_inputDiffSingleXMedium"])]
+				chart_json["modes"] = [("single-mixed", values["edit2a_inputDiffSingleMixedMedium"])]
 				chart_jsons.append(chart_json)
 
 		infile = values["edit2a_inputFileHard"]
@@ -219,7 +219,7 @@ def edit2a_eventlistener(event: str, values, window):
 				chart_json["diff"] = "Edit"
 				chart_json["infile"] = infile
 				chart_json["charter"] = "Hard Mixed"
-				chart_json["modes"] = [("single", values["edit2a_inputDiffSingleXHard"])]
+				chart_json["modes"] = [("single-mixed", values["edit2a_inputDiffSingleMixedHard"])]
 				chart_jsons.append(chart_json)
 
 		infile = values["edit2a_inputFileChallenge"]
@@ -241,7 +241,7 @@ def edit2a_eventlistener(event: str, values, window):
 				chart_json["diff"] = "Edit"
 				chart_json["infile"] = infile
 				chart_json["charter"] = "Challenge Mixed"
-				chart_json["modes"] = [("single", values["edit2a_inputDiffSingleXChallenge"])]
+				chart_json["modes"] = [("single-mixed", values["edit2a_inputDiffSingleMixedChallenge"])]
 				chart_jsons.append(chart_json)
 
 		if values["edit2a_inputFolderOutput"] == "":

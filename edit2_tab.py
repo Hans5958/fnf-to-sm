@@ -67,7 +67,7 @@ def edit2_eventlistener(event: str, values, window):
 	if event == "edit2_autoPopulate" or event == "edit2_inputFileMedium":
 
 		infile = values["edit2_inputFileMedium"]
-		override = event == "autoPopulate"
+		override = event.startswith("autoPopulate")
 
 		if os.path.isfile(infile):
 
@@ -129,7 +129,7 @@ def edit2_eventlistener(event: str, values, window):
 				chart_json["diff"] = "Edit"
 				chart_json["infile"] = infile
 				chart_json["charter"] = "Easy Mixed"
-				chart_json["modes"] = [("single", values["edit2_inputDiffSingleEasy"])]
+				chart_json["modes"] = [("single-mixed", values["edit2_inputDiffSingleEasy"])]
 				chart_jsons.append(chart_json)
 
 		infile = values["edit2_inputFileMedium"]
@@ -173,7 +173,7 @@ def edit2_eventlistener(event: str, values, window):
 				chart_json["diff"] = "Edit"
 				chart_json["infile"] = infile
 				chart_json["charter"] = "Hard Mixed"
-				chart_json["modes"] = [("single", values["edit2_inputDiffSingleHard"])]
+				chart_json["modes"] = [("single-mixed", values["edit2_inputDiffSingleHard"])]
 				chart_jsons.append(chart_json)
 
 		if values["edit2_inputFolderOutput"] == "":
