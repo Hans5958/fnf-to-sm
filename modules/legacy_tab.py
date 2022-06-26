@@ -1,8 +1,7 @@
 import json
 import os
-# import ffmpeg
 import PySimpleGUI as sg
-from core import fnf_to_sm, merge_tracks, SM_EXT, SSC_EXT, FNF_EXT
+from modules.core import fnf_to_sm, merge_tracks, SM_EXT, SSC_EXT, FNF_EXT
 
 sg.theme("SystemDefault1")
 

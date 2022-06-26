@@ -1,10 +1,9 @@
 import json
 import os
 import shutil
-from ssl import DefaultVerifyPaths
 # import ffmpeg
 import PySimpleGUI as sg
-from core import fnf_to_sm, merge_tracks, SM_EXT, SSC_EXT, FNF_EXT, parse_sm, sm_to_fnf
+from modules.core import fnf_to_sm, merge_tracks, SM_EXT, SSC_EXT, FNF_EXT, parse_sm, sm_to_fnf
 
 sg.theme("SystemDefault1")
 
@@ -220,7 +219,7 @@ def sm_eventlistener(event: str, values, window):
 					"color": [170, 0, 255]
 				}
 				outfile.write(json.dumps(pack_json))
-			shutil.copyfile(os.path.join(os.getcwd(), 'blank.png'), os.path.join(output_folder, song_title, 'images', 'storymenu', song_id + '.png'))
+			shutil.copyfile(os.path.join(os.getcwd(), 'modules', 'blank.png'), os.path.join(output_folder, song_title, 'images', 'storymenu', song_id + '.png'))
 
 		easy_chartfile, medium_chartfile, hard_chartfile = sm_to_fnf(
 			sm_chart,

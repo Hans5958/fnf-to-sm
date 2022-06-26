@@ -17,17 +17,13 @@
 
 # Built from the original chart-to-sm.js by Paturages, released under GPL3 with his permission
 
-import json
-import os
-import string
 # import ffmpeg
 import PySimpleGUI as sg
-from core import fnf_to_sm, merge_tracks, SM_EXT, SSC_EXT, FNF_EXT
-from legacy_tab import legacy_layout, legacy_eventlistener
-from edit_tab import edit_layout, edit_eventlistener
-from edit2_tab import edit2_layout, edit2_eventlistener
-from edit2a_tab import edit2a_layout, edit2a_eventlistener
-from sm_tab import sm_layout, sm_eventlistener
+from modules.legacy_tab import legacy_layout, legacy_eventlistener
+from modules.edit_tab import edit_layout, edit_eventlistener
+from modules.edit2_tab import edit2_layout, edit2_eventlistener
+from modules.edit2a_tab import edit2a_layout, edit2a_eventlistener
+from modules.sm_tab import sm_layout, sm_eventlistener
 
 VERSION = "v0.2.0-dev"
 
