@@ -1,21 +1,47 @@
-# FNF/SM converter
-Roughly convert Friday Night Funkin .json charts to doubles simfiles for StepMania \
-Or convert StepMania simfiles to FNF charts. \
-Very WIP but it works, kinda.
+# fnf-to-sm
 
-Usage: Drag-and-drop the FNF .json chart or a StepMania .sm simfile onto `fnf-to-sm.exe` \
-Or use the command line: `python fnf-to-sm.py [chart_file]`
+This program converts Friday Night Funkin' `.json` chart files into StepMania's `.sm` or `.ssc` chart files, including converting songs if found.  
 
-For FNF-to-SM, if you input the Normal difficulty .json, and have the \
-easy & hard .jsons in the same folder, then FNF-to-SM will output \
-a single .sm with all 3 difficulties.
+## Support
 
-SM-to-FNF currently only supports Challenge Single difficulty. \
-The output "blammed.json" is meant to replace "Blammed", Normal difficulty.
+### StepMania format
 
-Written by shockdude in Python 3.7 \
-Original chart-to-sm.js by Paturages \
-https://github.com/Paturages/
+| Format | Source | Target | Notes |
+| - | - | - | - |
+| .sm (old format) | :heavy_check_mark: | :heavy_check_mark:
+| .ssc (new format) | :heavy_check_mark: | :heavy_check_mark: | Experimental
 
-Project Outfox (active StepMania fork): https://projectmoon.dance/ \
-Friday Night Funkin: https://ninja-muffin24.itch.io/funkin
+### Friday Night Funkin' format
+
+| Format | Source | Target | Notes |
+| - | - | - | - |
+| Original (Legacy File System) | :heavy_check_mark: | :heavy_check_mark: | Replaces the `Tutorial` song
+| Original (New File System) | :heavy_check_mark: | :heavy_check_mark: | Replaces the `Tutorial` song
+| [Psych Engine](https://github.com/ShadowMario/FNF-PsychEngine/) | :heavy_check_mark: | :heavy_check_mark: | As a mod (copy to the `mods` folder)
+| [Kade Engine](https://github.com/KadeDev/Kade-Engine) | :heavy_check_mark: | :heavy_check_mark: | Replaces the `Tutorial` song
+| [Kade Engine](https://github.com/KadeDev/Kade-Engine) ([ModCore](https://github.com/KadeDev/Kade-Engine/blob/master/example_mods/README.md)) | :heavy_check_mark: | :heavy_check_mark: | As a mod (copy to the `mods` folder)
+
+### Interface
+
+| Interface | Availability | Notes
+| - | - | - |
+| GUI | :heavy_check_mark:
+| CLI | :x: | To be redone
+
+## Usage
+
+1. Have Python 3.10 ready. (3.10 is recommended, but you can try old versions)
+2. [Download the repository](https://github.com/Hans5958/fnf-to-sm/archive/refs/heads/main.zip). You can also clone by doing `git clone https://github.com/Hans5958/fnf-to-sm.git`.
+3. Install the requirements buy running `pip install -r requirements.txt`.
+4. Run `fnf-to-sm.py`.
+5. Choose between the modes on the tab.
+6. Fill the fields as you wish.
+   - You can start filling from the Medium field, since it will autofill the other fields if possible.
+   - Inst and Voices is for the music tracks, and can be left empty if not needed.
+7. Hit "Go" after all set. The output will be located on the set output folder. 
+
+## License
+
+fnf-to-sm is licensed under the terms of the [GNU General Public License v3.0](LICENSE).
+
+This is a fork based on [shockdude/fnf-to-sm](https://github.com/shockdude/fnf-to-sm), which is based on the `chart-to-sm.js` by [Paturages](https://github.com/Paturages).
