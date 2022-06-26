@@ -1,6 +1,10 @@
 # fnf-to-sm
 
-This program converts Friday Night Funkin' `.json` chart files into StepMania's `.sm` or `.ssc` chart files, including converting songs if found.  
+This program converts Friday Night Funkin' `.json` chart files into StepMania's `.sm` or `.ssc` chart files, including converting the music tracks if found. 
+
+For FNF to SM conversion, it can output double and couple charts, and for singles, it can output both the player-side chart (right-chart, like how it is originally played) and the mixed chart (based on the `mustHitSection` aka. the side the camera positioned)   
+
+For SM to FNF conversion, it can output based on the chosen difficulties to the available formats.  
 
 ## Support
 
@@ -39,6 +43,13 @@ This program converts Friday Night Funkin' `.json` chart files into StepMania's 
    - You can start filling from the Medium field, since it will autofill the other fields if possible.
    - Inst and Voices is for the music tracks, and can be left empty if not needed.
 7. Hit "Go" after all set. The output will be located on the set output folder. 
+
+### Modes
+
+| Modes | Description |
+| - | - |
+| Edit 2 | The recommended mode to use. Uses the Edit difficulty to for the mixes.
+| Edit 2 (Advanced) | 
 
 ## License
 
