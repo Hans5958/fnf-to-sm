@@ -23,7 +23,7 @@ col1_layout = [
 	],
 	# [sg.Text(size=(40,1), key="output1")],
 	# [sg.In(), sg.FileBrowse(file_types=(("JSON Files", "*.json"),))],
-	[sg.Button("legacy_go", key="legacy_go"), sg.Button("Exit", key="legacy_exit")],
+	[sg.Button("Go", key="legacy_go"), sg.Button("Exit", key="legacy_exit")],
 ]
 
 col2_layout = [
