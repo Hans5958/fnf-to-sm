@@ -16,8 +16,8 @@ col1_layout = [
 	[sg.Text("Output", size=(7,1)), sg.Input(os.getcwd(), key="edit2_inputFolderOutput"), sg.FolderBrowse(key="folderBrowse")],
 	[
 		sg.Text("Chart format"),
-		sg.Radio("*.sm", group_id="edit2_format", enable_events=True, key="edit2_formatSm"), 
-		sg.Radio("*.ssc", group_id="edit2_format", enable_events=True, key="edit2_formatSsc", default=True), 
+		sg.Radio("*.sm", group_id="edit2_format", enable_events=True, key="edit2_formatSm", default=True), 
+		sg.Radio("*.ssc", group_id="edit2_format", enable_events=True, key="edit2_formatSsc"), 
 	],
 	# [sg.Text(size=(40,1), key="output1")],
 	# [sg.In(), sg.FileBrowse(file_types=(("JSON Files", "*.json"),))],

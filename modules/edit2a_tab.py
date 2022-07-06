@@ -18,8 +18,8 @@ col1_layout = [
 	[sg.Text("Output", size=(7,1)), sg.Input(os.getcwd(), key="edit2a_inputFolderOutput"), sg.FolderBrowse(key="folderBrowse")],
 	[
 		sg.Text("Chart format"),
-		sg.Radio("*.sm", group_id="edit2_format", enable_events=True, key="edit2_formatSm"), 
-		sg.Radio("*.ssc", group_id="edit2_format", enable_events=True, key="edit2_formatSsc", default=True), 
+		sg.Radio("*.sm", group_id="edit2a_format", enable_events=True, key="edit2a_formatSm", default=True), 
+		sg.Radio("*.ssc", group_id="edit2a_format", enable_events=True, key="edit2a_formatSsc"), 
 	],
 	# [sg.Text(size=(40,1), key="output1")],
 	# [sg.In(), sg.FileBrowse(file_types=(("JSON Files", "*.json"),))],
@@ -248,8 +248,8 @@ def edit2a_eventlistener(event: str, values, window):
 				chart_json["modes"] = [("single-mixed", values["edit2a_inputDiffSingleMixedChallenge"])]
 				chart_jsons.append(chart_json)
 
-		if values['edit2_formatSm']: format = 'sm'
-		elif values['edit2_formatSsc']: format = 'ssc'
+		if values['edit2a_formatSm']: format = 'sm'
+		elif values['edit2a_formatSsc']: format = 'ssc'
 
 		if values["edit2a_inputFolderOutput"] == "":
 			output_folder = os.getcwd()

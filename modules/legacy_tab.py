@@ -17,8 +17,8 @@ col1_layout = [
 	[sg.Text("Output", size=(7,1)), sg.Input(os.getcwd(), key="legacy_inputFolderOutput"), sg.FolderBrowse(key="legacy_folderBrowse")],
 	[
 		sg.Text("Chart format"),
-		sg.Radio("*.sm", group_id="edit2_format", enable_events=True, key="edit2_formatSm"), 
-		sg.Radio("*.ssc", group_id="edit2_format", enable_events=True, key="edit2_formatSsc", default=True), 
+		sg.Radio("*.sm", group_id="legacy_format", enable_events=True, key="legacy_formatSm", default=True), 
+		sg.Radio("*.ssc", group_id="legacy_format", enable_events=True, key="legacy_formatSsc"), 
 	],
 	# [sg.Text(size=(40,1), key="output1")],
 	# [sg.In(), sg.FileBrowse(file_types=(("JSON Files", "*.json"),))],
@@ -76,8 +76,8 @@ legacy_layout = [[
 
 def legacy_eventlistener(event: str, values, window):
 
-	song_name = values["edit2_inputTitle"]
-	song_folder_name = values["edit2_inputSongFolderName"]
+	song_name = values["legacy_inputTitle"]
+	song_folder_name = values["legacy_inputSongFolderName"]
 
 	if event.startswith("legacy_radioDerivateMixedFrom"):
 		if event == "legacy_radioDerivateMixedFromNone":
@@ -185,8 +185,8 @@ def legacy_eventlistener(event: str, values, window):
 				chart_json["modes"] = (("single", values["legacy_inputDiffSingleChallenge"]), ("double", values["legacy_inputDiffDoubleChallenge"]))
 				chart_jsons.append(chart_json)
 
-		if values['edit2_formatSm']: format = 'sm'
-		elif values['edit2_formatSsc']: format = 'ssc'
+		if values['legacy_formatSm']: format = 'sm'
+		elif values['legacy_formatSsc']: format = 'ssc'
 
 		if values["legacy_inputFolderOutput"] == "":
 			output_folder = os.getcwd()
@@ -207,12 +207,12 @@ def legacy_eventlistener(event: str, values, window):
 			window=window,
 			metadata={
 				'name': song_name,
-				'subtitle': values["edit2_inputSubtitle"],
-				'artist': values["edit2_inputArtist"], 
-				'charter': values["edit2_inputCharter"], 
-				'credit': values["edit2_inputCredit"], 
-				'banner': values["edit2_inputBannerFileName"],
-				'background': values["edit2_inputBGFileName"],
+				'subtitle': values["legacy_inputSubtitle"],
+				'artist': values["legacy_inputArtist"], 
+				'charter': values["legacy_inputCharter"], 
+				'credit': values["legacy_inputCredit"], 
+				'banner': values["legacy_inputBannerFileName"],
+				'background': values["legacy_inputBGFileName"],
 			},
 			initial_steps=initial_steps,
 			format=format

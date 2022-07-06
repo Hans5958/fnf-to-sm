@@ -15,8 +15,8 @@ col1_layout = [
 	[sg.Text("Output", size=(7,1)), sg.Input(os.getcwd(), key="edit_inputFolderOutput"), sg.FolderBrowse(key="edit_folderBrowse")],
 	[
 		sg.Text("Chart format"),
-		sg.Radio("*.sm", group_id="edit2_format", enable_events=True, key="edit2_formatSm"), 
-		sg.Radio("*.ssc", group_id="edit2_format", enable_events=True, key="edit2_formatSsc", default=True), 
+		sg.Radio("*.sm", group_id="edit_format", enable_events=True, key="edit_formatSm", default=True), 
+		sg.Radio("*.ssc", group_id="edit_format", enable_events=True, key="edit_formatSsc"), 
 	],
 	# [sg.Text(size=(40,1), key="output1")],
 	# [sg.In(), sg.FileBrowse(file_types=(("JSON Files", "*.json"),))],
@@ -185,8 +185,8 @@ def edit_eventlistener(event: str, values, window):
 				chart_json["modes"] = [("single-mixed", values["edit_inputDiffSingleEdit"])]
 				chart_jsons.append(chart_json)
 
-		if values['edit2_formatSm']: format = 'sm'
-		elif values['edit2_formatSsc']: format = 'ssc'
+		if values['edit_formatSm']: format = 'sm'
+		elif values['edit_formatSsc']: format = 'ssc'
 
 		if values["edit_inputFolderOutput"] == "":
 			output_folder = os.getcwd()
@@ -207,12 +207,12 @@ def edit_eventlistener(event: str, values, window):
 			window=window,
 			metadata={
 				'name': song_name,
-				'subtitle': values["edit2_inputSubtitle"],
-				'artist': values["edit2_inputArtist"], 
-				'charter': values["edit2_inputCharter"], 
-				'credit': values["edit2_inputCredit"], 
-				'banner': values["edit2_inputBannerFileName"],
-				'background': values["edit2_inputBGFileName"],
+				'subtitle': values["edit_inputSubtitle"],
+				'artist': values["edit_inputArtist"], 
+				'charter': values["edit_inputCharter"], 
+				'credit': values["edit_inputCredit"], 
+				'banner': values["edit_inputBannerFileName"],
+				'background': values["edit_inputBGFileName"],
 			},
 			initial_steps=initial_steps,
 			format=format
