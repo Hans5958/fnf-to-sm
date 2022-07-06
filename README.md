@@ -48,8 +48,13 @@ For SM to FNF conversion, it can output based on the chosen difficulties to the 
 
 | Modes | Description |
 | - | - |
-| Edit 2 | The recommended mode to use. Uses the Edit difficulty to for the mixes.
-| Edit 2 (Advanced) | 
+| Edit 2 | The recommended mode to use. Uses the Edit difficulty for the mixes.
+| Edit 2 (Advanced) | Similar to Edit 2, but with more controls for the meter (difficulty number) and support for additional difficulties.
+| StepMania | Converts StepMania charts to FNF charts.
+| Edit | Uses the Edit difficulty for the mixes, except on the Single chart.
+| Legacy | Uses the intermediary difficulties for the mixes. With the Easy, Medium, and Hard charts on FNF, the player-side charts are on Beginner, Medium, and Expert, and the mixed charts are on Easy, Hard, and Edit.
+
+(when not mentioned, the mode converts FNF charts to StepMania)
 
 ## License
 
