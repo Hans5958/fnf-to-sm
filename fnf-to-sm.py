@@ -54,14 +54,14 @@ def main():
 	for key in window.AllKeysDict.keys():
 		if type(key) is str and len(key.split('_')) > 1:
 			key_name = key.split('_')[1]
-			print(key_name)
+			# print(key_name)
 			if key_name.startswith('input') or key_name.startswith('radio'):
 				default_values[key] = values[key]
 
 	while True:
 
 		event, values = window.read()
-		print(event)
+		# print(event)
 
 		if event == sg.WINDOW_CLOSED or event.endswith('_exit'):
 			break
@@ -82,7 +82,7 @@ def main():
 			continue
 
 		elif event.endswith('_reset'):
-			print('goes')
+			# print('goes')
 			tab_id = event.split('_')[0]
 			for key in default_values.keys(): 
 				if key.startswith(tab_id):

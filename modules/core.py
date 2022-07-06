@@ -251,10 +251,6 @@ def fnf_to_sm(chart_jsons, window, metadata, initial_steps, format='sm'):
 
 	new_chartfile = StepManiaFile()
 	
-	# for each fnf difficulty
-	sm_header = ''
-	sm_notes = ''
-
 	steps_to_make = initial_steps
 	steps_made = 0
 
